@@ -1234,7 +1234,6 @@ cluster NetworkCommissioning = 49 {
     kWiFiNetworkInterface = 0x1;
     kThreadNetworkInterface = 0x2;
     kEthernetNetworkInterface = 0x4;
-    kPerDeviceCredentials = 0x8;
   }
 
   bitmap ThreadCapabilitiesBitmap : bitmap16 {
@@ -1251,14 +1250,11 @@ cluster NetworkCommissioning = 49 {
     kWPAPersonal = 0x4 [spec_name = "WPA-PERSONAL"];
     kWPA2Personal = 0x8 [spec_name = "WPA2-PERSONAL"];
     kWPA3Personal = 0x10 [spec_name = "WPA3-PERSONAL"];
-    kWPA3MatterPDC = 0x20 [spec_name = "WPA3-Matter-PDC"];
   }
 
   struct NetworkInfoStruct {
     octet_string<32> networkID = 0;
     boolean connected = 1;
-    optional nullable octet_string<20> networkIdentifier = 2;
-    optional nullable octet_string<20> clientIdentifier = 3;
   }
 
   struct ThreadInterfaceScanResultStruct {
@@ -1314,9 +1310,6 @@ cluster NetworkCommissioning = 49 {
     octet_string<32> ssid = 0;
     octet_string<64> credentials = 1;
     optional int64u breadcrumb = 2;
-    optional octet_string<140> networkIdentity = 3;
-    optional octet_string<20> clientIdentifier = 4;
-    optional octet_string<32> possessionNonce = 5;
   }
 
   request struct AddOrUpdateThreadNetworkRequest {
@@ -1333,8 +1326,6 @@ cluster NetworkCommissioning = 49 {
     NetworkCommissioningStatusEnum networkingStatus = 0;
     optional long_char_string<512> debugText = 1;
     optional int8u networkIndex = 2;
-    optional octet_string<140> clientIdentity = 3;
-    optional octet_string<64> possessionSignature = 4;
   }
 
   request struct ConnectNetworkRequest {
@@ -1354,16 +1345,6 @@ cluster NetworkCommissioning = 49 {
     optional int64u breadcrumb = 2;
   }
 
-  request struct QueryIdentityRequest {
-    octet_string<20> keyIdentifier = 0;
-    optional octet_string<32> possessionNonce = 1;
-  }
-
-  response struct QueryIdentityResponse = 10 {
-    octet_string<140> identity = 0;
-    optional octet_string<64> possessionSignature = 1;
-  }
-
   /** This command is used to scan for available networks on the network interface associated with the cluster instance. */
   command access(invoke: administer) ScanNetworks(ScanNetworksRequest): ScanNetworksResponse = 0;
   /** This command is used to add or update a Wi-Fi network configuration. */
@@ -1376,8 +1357,6 @@ cluster NetworkCommissioning = 49 {
   command access(invoke: administer) ConnectNetwork(ConnectNetworkRequest): ConnectNetworkResponse = 6;
   /** This command is used to re-order the network configuration list. */
   command access(invoke: administer) ReorderNetwork(ReorderNetworkRequest): NetworkConfigResponse = 8;
-  /** This command is used to query the identity of a network configuration. */
-  command access(invoke: administer) QueryIdentity(QueryIdentityRequest): QueryIdentityResponse = 9;
 }
 
 /** The cluster provides commands for retrieving unstructured diagnostic logs from a Node that may be used to aid in diagnostics. */
@@ -2084,7 +2063,7 @@ cluster OperationalCredentials = 62 {
 
 /** The Group Key Management Cluster is the mechanism by which group keys are managed. */
 cluster GroupKeyManagement = 63 {
-  revision 4;
+  revision 3;
 
   enum GroupKeyMulticastPolicyEnum : enum8 {
     kPerGroupID = 0;
@@ -2123,6 +2102,7 @@ cluster GroupKeyManagement = 63 {
     nullable epoch_us epochStartTime1 = 5;
     nullable octet_string<16> epochKey2 = 6;
     nullable epoch_us epochStartTime2 = 7;
+    GroupKeyMulticastPolicyEnum groupKeyMulticastPolicy = 8;
   }
 
   fabric_scoped struct GroupcastAdoptionStruct {
@@ -3195,7 +3175,7 @@ endpoint 0 {
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
-    ram      attribute featureMap default = 5;
+    ram      attribute featureMap default = 1;
     callback attribute clusterRevision default = 1;
 
     handle command JoinGroup;
@@ -3206,7 +3186,7 @@ endpoint 0 {
   }
 }
 endpoint 1 {
-  device type ma_dimmablelight = 257, version 1;
+  device type ma_extendedcolorlight = 269, version 1;
 
 
   server cluster Identify {
@@ -3239,7 +3219,7 @@ endpoint 1 {
   }
 
   server cluster OnOff {
-    persist  attribute onOff default = 0x00;
+    persist  attribute onOff default = 0x01;
     ram      attribute globalSceneControl default = 0x01;
     ram      attribute onTime default = 0x0000;
     ram      attribute offWaitTime default = 0x0000;
@@ -3259,9 +3239,9 @@ endpoint 1 {
   }
 
   server cluster LevelControl {
-    persist  attribute currentLevel default = 0x01;
+    persist  attribute currentLevel default = 0xFE;
     ram      attribute remainingTime default = 0x0000;
-    ram      attribute minLevel default = 0x00;
+    ram      attribute minLevel default = 0x01;
     ram      attribute maxLevel default = 0xFE;
     ram      attribute options default = 0x00;
     ram      attribute onOffTransitionTime default = 0x0000;
@@ -3318,11 +3298,11 @@ endpoint 1 {
   }
 
   server cluster ColorControl {
-    persist  attribute currentHue default = 0x00;
-    persist  attribute currentSaturation default = 0x00;
+    persist  attribute currentHue default = 0x18;
+    persist  attribute currentSaturation default = 0xC9;
     ram      attribute remainingTime default = 0x0000;
-    persist  attribute currentX default = 0x616B;
-    persist  attribute currentY default = 0x607D;
+    persist  attribute currentX default = 0x753F;
+    persist  attribute currentY default = 0x68F6;
     persist  attribute colorTemperatureMireds default = 0x00FA;
     persist  attribute colorMode default = 0x01;
     ram      attribute options default = 0x00;
@@ -3338,7 +3318,7 @@ endpoint 1 {
     ram      attribute colorTempPhysicalMinMireds default = 0x0000;
     ram      attribute colorTempPhysicalMaxMireds default = 0xFEFF;
     ram      attribute coupleColorTempToLevelMinMireds;
-    persist  attribute startUpColorTemperatureMireds;
+    persist  attribute startUpColorTemperatureMireds default = 0;
     callback attribute generatedCommandList;
     callback attribute acceptedCommandList;
     callback attribute attributeList;
