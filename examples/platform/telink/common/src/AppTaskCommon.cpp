@@ -28,6 +28,9 @@
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 #include "ThreadUtil.h"
 #include <lib/support/ThreadOperationalDataset.h>
+#if CONFIG_OPENTHREAD_SNTP_CLIENT
+#include "ThreadTimeSync.h"
+#endif
 #elif CHIP_DEVICE_CONFIG_ENABLE_WIFI
 #include <platform/Zephyr/InetUtils.h>
 #include <platform/telink/wifi/TelinkWiFiDriver.h>
@@ -1337,6 +1340,12 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
 #endif
         break;
     case DeviceEventType::kThreadStateChange:
+#if CONFIG_OPENTHREAD_SNTP_CLIENT
+        if (ConnectivityMgr().IsThreadAttached())
+        {
+            ThreadTimeSync::getInstance().sync_dns("pool.ntp.org");
+        }
+#endif
         sIsNetworkProvisioned = ConnectivityMgr().IsThreadProvisioned();
         sIsNetworkEnabled     = ConnectivityMgr().IsThreadEnabled();
         sIsNetworkAttached    = ConnectivityMgr().IsThreadAttached();
