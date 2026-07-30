@@ -563,6 +563,10 @@ config TELINK_TLX_MBEDTLS_HW_ACCELERATION
 	bool "Use Telink TLx platform mbedtls HW acceleration"
 	default y if SOC_FAMILY_TELINK_TLX
 
+config NET_CONTEXT_RECV_PKTINFO
+    bool
+    default y
+
 endif # !ZEPHYR_VERSION_3_3
 
 config GETOPT_LONG
