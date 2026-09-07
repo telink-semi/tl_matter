@@ -60,16 +60,32 @@ CHIP_ERROR AppTask::Init(void)
     // Register a Door Lock delegate to handle Aliro provisioning attributes/commands.
     ReturnErrorOnFailure(DoorLockServer::Instance().SetDelegate(kExampleEndpointId, &AliroDelegate::GetInstance()));
 
-    telink_aliro_nfc_callbacks aliroCallbacks = {};
+    telink_aliro_callbacks aliroCallbacks = {};
     aliroCallbacks.get_lock_state             = GetAliroLockState;
     aliroCallbacks.request_lock_state         = RequestAliroLockState;
     aliroCallbacks.authorize_endpoint         = AuthorizeAliroEndpoint;
 
-    if (telink_aliro_nfc_init(&aliroCallbacks) != 0)
+    if (telink_aliro_init(&aliroCallbacks) != 0)
+    {
+        LOG_ERR("Aliro reader initialization failed");
+        return CHIP_ERROR_INTERNAL;
+    }
+
+#if CONFIG_ALIRO_TRANSPORT_NFC
+    if (telink_aliro_nfc_start() != 0)
     {
         LOG_ERR("Aliro NFC initialization failed");
         return CHIP_ERROR_INTERNAL;
     }
+#endif
+
+#if CONFIG_ALIRO_TRANSPORT_BLE
+    if (telink_aliro_ble_init() != 0)
+    {
+        LOG_ERR("Aliro BLE initialization failed");
+        return CHIP_ERROR_INTERNAL;
+    }
+#endif
 
     return CHIP_NO_ERROR;
 }

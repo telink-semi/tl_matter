@@ -36,7 +36,11 @@ set(TELINK_ALIRO_SDK_URL
     "https://doc.telink-semi.cn/Zephyr/binaries/public/aliro/telink-aliro-sdk-latest.tar.gz"
     CACHE STRING "Telink Aliro SDK archive URL")
 
-if(CONFIG_ALIRO_TRANSPORT_NFC)
+if(NOT CONFIG_ALIRO_TRANSPORT_NFC AND NOT CONFIG_ALIRO_TRANSPORT_BLE)
+  message(FATAL_ERROR "Enable at least one Aliro transport")
+endif()
+
+if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
   if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
     FetchContent_Declare(telink_aliro
       SOURCE_DIR "${FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO}"
@@ -82,7 +86,8 @@ target_sources(app PRIVATE
                ${TELINK_COMMON}/util/src/ThreadUtil.cpp
                ${TELINK_COMMON}/util/src/PWMManager.cpp
                ${TELINK_COMMON}/zephyr_ext/zephyr_key_matrix.c
-               ${TELINK_COMMON}/zephyr_ext/zephyr_led_pool.c)
+               ${TELINK_COMMON}/zephyr_ext/zephyr_led_pool.c
+               ${TELINK_COMMON}/zephyr_ext/zephyr_pwm_pool.c)
 
 chip_configure_data_model(app
     ZAP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lock-app-minimal.zap

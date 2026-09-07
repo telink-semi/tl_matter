@@ -1,23 +1,32 @@
-# Matter Telink Lock with Aliro NFC Example Application
+# Matter Telink Lock with Aliro Example Application
 
 The Telink Aliro Minimal Lock Example demonstrates a Matter door lock with
 Aliro credential provisioning and NFC access on `tl3238x`. The application is
 commissioned over Matter BLE, operates on a Thread network, and uses a CLRC663
 NFC frontend for Aliro standard transactions.
 
+An initial Aliro BLE-only RKE build profile is also available for `tl7218x`.
+It is integration groundwork and has not yet completed Wallet transaction or
+BLE/Thread runtime validation.
+
 Matter owns the device lifecycle, BLE commissioning, Thread networking, and
-Matter persistence. The Aliro SDK is linked as a library and is used only for
-the NFC access flow in this version.
+Matter persistence. The Aliro SDK is linked as a library and uses the same
+Zephyr Bluetooth host as Matter; it does not initialize or own a second BLE
+stack.
 
 ## Supported devices
 
 | Board/SoC | Build target | NFC frontend | Zephyr Board Info |
 | :-------- | :----------- | :----------- | :---------------- |
 | TL3238X | `tl3238x` | CLRC663 | [TL3238X](https://github.com/telink-semi/zephyr/tree/telink_aliro_baza_zephyr_4.1.0/boards/telink/tl323x) |
+| TL7218X | `tl7218x` | Not used by BLE profile | [TL7218X](https://github.com/telink-semi/zephyr/tree/feat-concurrent/boards/telink/tl721x) |
 
 This application has been tested with Telink Zephyr revision
 `69f4e4ebf0f607c1808e6f5ff7e91c6f6c531a29`, Telink HAL revision
 `ce77c8f74d7e99a75d755dd4c3b43c859cb00b1b`, and Zephyr SDK 0.17.0.
+These revisions describe the validated TL3238X NFC configuration. The TL7218X
+BLE profile requires Telink's concurrent BLE/Thread Zephyr branch and its
+matching HAL revision.
 
 ## Implemented functionality
 
@@ -122,6 +131,15 @@ You just need to checkout specific branch of Zephyr using current Matter revisio
       -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
     ```
 
+   For the initial TL7218X Aliro BLE-only profile, use the concurrent
+   BLE/Thread Zephyr and HAL revisions, then add `prj_ble.conf`:
+
+    ```bash
+    west build -p always -b tl7218x -- \
+      -DEXTRA_CONF_FILE=prj_ble.conf \
+      -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
+    ```
+
 4. Flash the generated `merged.bin` using the TL3238X flashing procedure. The
    current TL3238X Zephyr board documentation does not enable a `west flash`
    runner.
@@ -196,10 +214,32 @@ After provisioning, present the matching NFC credential to the CLRC663 reader.
 The application accepts the requested lock action only when the transaction is
 authenticated and its endpoint key belongs to an occupied Matter user.
 
+### Aliro BLE bring-up profile
+
+The `prj_ble.conf` overlay keeps Matter BLE commissioning enabled and adds an
+Aliro BLE-only RKE peripheral to the same Zephyr Bluetooth host. Matter uses
+Bluetooth identity 0; Aliro creates identity 1 and a dedicated connectable
+extended advertising set. The profile reserves two BLE connections so a Matter
+commissioning connection and an Aliro connection can coexist at host level.
+
+Aliro advertising starts after Matter provisions the Aliro reader
+configuration. The Aliro GATT service negotiates the protocol version before
+accepting its dynamic LE L2CAP channel, which carries the Aliro APDU exchange.
+BLE + UWB flow is not enabled.
+
 ## Current limitations
 
-- Only Aliro NFC standard transactions are enabled. Aliro BLE/UWB, expedited
-  transactions, and keyslot credentials are not included.
+- The default and validated profile is Aliro NFC standard transaction on
+  TL3238X. The TL7218X BLE-only profile is an initial compile/integration target;
+  Aliro Wallet BLE transactions have not yet been validated.
+- BLE advertising still uses temporary expiry and group-resolving-key inputs.
+  These must be sourced from the provisioned Aliro state and current time before
+  interoperability testing.
+- The BLE profile depends on Telink's concurrent BLE/Thread Zephyr branch and
+  matching HAL/controller library. Matter commissioning plus Aliro BLE runtime
+  coexistence is not yet proven by this application.
+- Aliro BLE + UWB, expedited transactions, and keyslot credentials are not
+  included.
 - Aliro issuer keys, endpoint keys, and reader configuration are stored in RAM
   only and are lost on reboot. Matter settings remain persistent.
 - Aliro transaction-control persistence is disabled because the standalone SDK

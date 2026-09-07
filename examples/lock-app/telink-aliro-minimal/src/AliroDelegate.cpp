@@ -160,11 +160,21 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
 
     ReturnErrorOnFailure(Crypto::DRBG_get_bytes(groupSubIdentifier, sizeof(groupSubIdentifier)));
 
-    int err = telink_aliro_nfc_set_reader_config(signingKey.data(), signingKey.size(), verificationKey.data(),
-                                                 verificationKey.size(), groupIdentifier.data(), groupIdentifier.size(),
-                                                 groupSubIdentifier, sizeof(groupSubIdentifier));
+    int err = telink_aliro_set_reader_config(signingKey.data(), signingKey.size(), verificationKey.data(), verificationKey.size(),
+                                             groupIdentifier.data(), groupIdentifier.size(), groupSubIdentifier,
+                                             sizeof(groupSubIdentifier));
     VerifyOrReturnError(err == 0, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Zcl, "Unable to apply Aliro NFC reader configuration: %d", err));
+                        ChipLogError(Zcl, "Unable to apply Aliro reader configuration: %d", err));
+
+#if CONFIG_ALIRO_TRANSPORT_BLE
+    err = telink_aliro_ble_start();
+    if (err != 0)
+    {
+        ChipLogError(Zcl, "Unable to start Aliro BLE advertising: %d", err);
+        (void) telink_aliro_clear_reader_config();
+        return CHIP_ERROR_INTERNAL;
+    }
+#endif
 
     memcpy(mAliroReaderVerificationKey, verificationKey.data(), sizeof(mAliroReaderVerificationKey));
     memcpy(mAliroReaderGroupIdentifier, groupIdentifier.data(), sizeof(mAliroReaderGroupIdentifier));
@@ -181,9 +191,17 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
 
 CHIP_ERROR AliroDelegate::ClearAliroReaderConfig()
 {
-    int err = telink_aliro_nfc_clear_reader_config();
+    int err;
+
+#if CONFIG_ALIRO_TRANSPORT_BLE
+    err = telink_aliro_ble_stop();
     VerifyOrReturnError(err == 0, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Zcl, "Unable to clear Aliro NFC reader configuration: %d", err));
+                        ChipLogError(Zcl, "Unable to stop Aliro BLE advertising: %d", err));
+#endif
+
+    err = telink_aliro_clear_reader_config();
+    VerifyOrReturnError(err == 0, CHIP_ERROR_INTERNAL,
+                        ChipLogError(Zcl, "Unable to clear Aliro reader configuration: %d", err));
 
     memset(mAliroReaderVerificationKey, 0, sizeof(mAliroReaderVerificationKey));
     memset(mAliroReaderGroupIdentifier, 0, sizeof(mAliroReaderGroupIdentifier));

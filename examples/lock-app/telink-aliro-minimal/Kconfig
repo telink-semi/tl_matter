@@ -21,11 +21,43 @@ config SETTINGS_NVS_NAME_CACHE
 config SETTINGS_NVS_NAME_CACHE_SIZE
     default 256
 
-menu "Aliro NFC configuration"
+menu "Aliro configuration"
 
 config ALIRO_TRANSPORT_NFC
     bool "Enable Aliro NFC transport"
     default y
+    select GPIO
+    select SPI
+
+config ALIRO_TRANSPORT_BLE
+    bool "Enable Aliro BLE-only RKE transport"
+    default n
+    select BT
+    select BT_PERIPHERAL
+    select BT_HOST_CRYPTO
+    select BT_SMP
+    select BT_L2CAP_DYNAMIC_CHANNEL
+    select BT_EXT_ADV
+
+config ALIRO_ONLY_BLE_FLOW_SUPP
+    bool
+    default y
+    depends on ALIRO_TRANSPORT_BLE
+
+config ALIRO_BLE_UWB_FLOW_SUPP
+    bool
+    default n
+    depends on ALIRO_TRANSPORT_BLE
+
+config ALIRO_BT_POLLER_THREAD_STACK_SIZE
+    int "Aliro BLE transaction thread stack size"
+    depends on ALIRO_TRANSPORT_BLE
+    default 4096
+
+config ALIRO_BT_POLLER_THREAD_PRIO
+    int "Aliro BLE transaction thread priority"
+    depends on ALIRO_TRANSPORT_BLE
+    default 5
 
 config ALIRO_NFC_POLLER_THREAD_STACK_SIZE
     int "Aliro NFC poller thread stack size"
