@@ -1,6 +1,6 @@
 # Telink Matter SDK
 
-* [Chinese README](README_cn.md)
+- [Chinese README](README_cn.md)
 
 [![Telink Website](https://img.shields.io/badge/Website-Telink-blue?style=flat-square)](https://www.telink-semi.com/)
 [![Forum](https://img.shields.io/badge/Forum-Telink-green?style=flat-square)](https://forum.telink-semi.cn/)
@@ -15,14 +15,14 @@
 **A Matter protocol implementation for Telink RISC-V SoC platforms based on the
 Connected Home over IP (CHIP) project**
 
--   For development environment setup, SDK acquisition, and quick-start
-    instructions, refer to the
-    [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md).
--   For a deeper walkthrough, see the online
-    [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
-    (Chapter **Obtaining Matter Source Code** covers the initial setup).
--   For a detailed list of supported devices and resource usage, refer to the
-    [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
+- For development environment setup, SDK acquisition, and quick-start
+  instructions, refer to the
+  [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md).
+- For a deeper walkthrough, see the online
+  [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
+  (Chapter **Obtaining Matter Source Code** covers the initial setup).
+- For a detailed list of supported devices and resource usage, refer to the
+  [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
 
 ---
 
@@ -35,16 +35,16 @@ complete Matter-over-Thread support for Telink chips.
 
 ### SDK Core Capabilities
 
-| Category            | Capability                                                       |
-| ------------------- | ---------------------------------------------------------------- |
-| Matter              | Matter (connectedhomeip) protocol stack                          |
-| RTOS                | Telink Zephyr RTOS integration                                   |
-| Thread networking   | Matter over Thread via OpenThread                                |
-| BLE commissioning   | BLE commissioning for device provisioning                        |
-| OTA                 | Remote firmware update support                                   |
-| Factory data        | Factory data provisioning                                        |
-| Power management    | Retention RAM power management for low-power devices             |
-| Boot management     | MCUboot bootloader integration                                   |
+| Category            | Capability                                                         |
+| ------------------- | ------------------------------------------------------------------ |
+| Matter              | Matter (connectedhomeip) protocol stack                            |
+| RTOS                | Telink Zephyr RTOS integration                                     |
+| Thread networking   | Matter over Thread via OpenThread                                  |
+| BLE commissioning   | BLE commissioning for device provisioning                          |
+| OTA                 | Remote firmware update support                                     |
+| Factory data        | Factory data provisioning                                          |
+| Power management    | Retention RAM power management for low-power devices               |
+| Boot management     | MCUboot bootloader integration                                     |
 | Sample applications | Multiple Matter sample applications for validation and development |
 
 You can use this SDK to develop Telink Matter smart-home end devices with
@@ -53,14 +53,14 @@ device development to production testing.
 
 ### Supported Examples
 
-The SDK provides Telink ports for the following Matter example applications.
-See the [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
-for the chip/EVK support matrix validated in each release.
+The SDK provides Telink ports for the following Matter example applications. See
+the [Release Note](docs/platforms/telink/releases/telink_release_notes.md) for
+the chip/EVK support matrix validated in each release.
 
-| Category           | Examples                                                                                                                                                                                                             |
-| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Category           | Examples                                                                                                                                                                                                 |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Matter over Thread | lighting-app, light-switch-app, lock-app, contact-sensor-app, smoke-co-alarm-app, temperature-measurement-app, thermostat, air-quality-sensor-app, window-app, pump-app, pump-controller-app, bridge-app |
-| Development tools  | all-clusters-app, all-clusters-minimal-app, shell, ota-requestor-app, chef                                                                                                                                          |
+| Development tools  | all-clusters-app, all-clusters-minimal-app, shell, ota-requestor-app, chef                                                                                                                               |
 
 ---
 

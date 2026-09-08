@@ -6,11 +6,11 @@
 
 ---
 
--   **Release Type:** Pre-Release (rc1)
--   **Branch:**
-    [release-v1.0-v1.5-branch](https://github.com/telink-semi/connectedhomeip/tree/release-v1.0-v1.5-branch)
--   **Tag Version:**
-    [tl_v1.0.1-rc1-v1.5](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.0.1-rc1-v1.5)
+- **Release Type:** Pre-Release (rc1)
+- **Branch:**
+  [release-v1.0-v1.5-branch](https://github.com/telink-semi/connectedhomeip/tree/release-v1.0-v1.5-branch)
+- **Tag Version:**
+  [tl_v1.0.1-rc1-v1.5](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.0.1-rc1-v1.5)
     <!-- -   **Target Commit:**
         [b4c04e3](https://github.com/telink-semi/connectedhomeip/commit/b4c04e3c1816fc242a100e305047ac1350457d17) -->
 
@@ -58,8 +58,8 @@ on Telink chips including TL323X and TL721X.
 
 ### Telink Zephyr SDK
 
-| Property   | Version                                                                                              |
-| ---------- | ---------------------------------------------------------------------------------------------------- |
+| Property   | Version                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------- |
 | **Commit** | [7b102df](https://github.com/telink-semi/tl_zephyr/commit/7b102dfc9bc4c27e95dc84bd6291caf46b6b070c) |
 
 ### Chip &amp; Hardware Versions
@@ -120,15 +120,15 @@ on Telink chips including TL323X and TL721X.
 
 ## 🆕 New Features
 
--   ✅ Matter 1.5 support for Telink platforms
--   ✅ Full support for TL323X series chips in Matter
--   ✅ Support for TL721X series chips in Matter
--   ✅ LZMA compression support for OTA images
--   ✅ Factory data provisioning support
--   ✅ Dual-mode configuration support for TL3238X
--   ✅ Power management with retention RAM support
--   ✅ NFC payload support for all-clusters-minimal-app
--   ✅ DFU over SMP support for lock-app
+- ✅ Matter 1.5 support for Telink platforms
+- ✅ Full support for TL323X series chips in Matter
+- ✅ Support for TL721X series chips in Matter
+- ✅ LZMA compression support for OTA images
+- ✅ Factory data provisioning support
+- ✅ Dual-mode configuration support for TL3238X
+- ✅ Power management with retention RAM support
+- ✅ NFC payload support for all-clusters-minimal-app
+- ✅ DFU over SMP support for lock-app
 
 ---
 
@@ -244,20 +244,20 @@ example and the Telink chip platforms that support it (see
 -   For build commands per board/app, refer to the per-board `*_README.md` files
     inside each example's `boards/` directory. -->
 
--   **Tested combinations (✅):** Only TL323X and TL721X with lighting-app and
-    light-switch-app have been fully tested in this release.
--   **Supported but untested (🟡):** All other build targets listed in the table
-    are compiled successfully but have not been functionally validated in this
-    release. Use with caution.
--   **Untested (·):** Combinations not listed are not built or validated in this
-    release.
--   **TL323X / TL721X** are the latest Telink RISC-V SoC families. Lighting and
-    light-switch apps are supported across all three; TL721X additionally
-    supports bridge-app and window-app.
--   The light-switch-app on TL323X/TL721X uses the `*_retention` board target
-    (power management with retention RAM).
--   For build commands per board/app, refer to the per-board `*_README.md` files
-    inside each example's `boards/` directory.
+- **Tested combinations (✅):** Only TL323X and TL721X with lighting-app and
+  light-switch-app have been fully tested in this release.
+- **Supported but untested (🟡):** All other build targets listed in the table
+  are compiled successfully but have not been functionally validated in this
+  release. Use with caution.
+- **Untested (·):** Combinations not listed are not built or validated in this
+  release.
+- **TL323X / TL721X** are the latest Telink RISC-V SoC families. Lighting and
+  light-switch apps are supported across all three; TL721X additionally supports
+  bridge-app and window-app.
+- The light-switch-app on TL323X/TL721X uses the `*_retention` board target
+  (power management with retention RAM).
+- For build commands per board/app, refer to the per-board `*_README.md` files
+  inside each example's `boards/` directory.
 
 ---
 
@@ -314,13 +314,13 @@ output (`Memory region` summary) of the build logs.
 
 > 📌 **Notes:**
 >
-> -   **Firmware (merged.bin)** = MCUBoot (at offset 0) + gap padding + slot0
->     application image (`zephyr.signed.bin`). This is the file flashed to the
->     device.
-> -   All four targets fit within the slot0 partition (1152 KB) with LZMA
->     compression enabled.
-> -   The LZMA-compressed DFU image (`merged_dfu.lzma.bin`) is smaller than the
->     signed image (e.g. 942630 B → 547530 B for TL7218X lighting).
+> - **Firmware (merged.bin)** = MCUBoot (at offset 0) + gap padding + slot0
+>   application image (`zephyr.signed.bin`). This is the file flashed to the
+>   device.
+> - All four targets fit within the slot0 partition (1152 KB) with LZMA
+>   compression enabled.
+> - The LZMA-compressed DFU image (`merged_dfu.lzma.bin`) is smaller than the
+>   signed image (e.g. 942630 B → 547530 B for TL7218X lighting).
 
 <!-- > -   For a detailed RAM/ROM symbol breakdown, run `west build -t ram_report` /
 >     `west build -t rom_report` in the build directory. -->
@@ -329,23 +329,23 @@ output (`Memory region` summary) of the build logs.
 
 ### 📝 Additional Notes
 
--   **Memory Regions:** May vary between chip variants; check individual board
-    configurations
--   **Build Config:** Matter builds use `west build` directly from each
-    example's `telink` directory; CI builds use the Matter `build_examples.py`
-    system with Telink targets
--   **Production Optimizations:** For production builds, preform further
-    develop, disable debug logging and enable appropriate optimizations to
-    reduce RAM/ROM usage
--   **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
-    and BLE for commissioning
--   **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when
-    OTA is enabled
+- **Memory Regions:** May vary between chip variants; check individual board
+  configurations
+- **Build Config:** Matter builds use `west build` directly from each example's
+  `telink` directory; CI builds use the Matter `build_examples.py` system with
+  Telink targets
+- **Production Optimizations:** For production builds, preform further develop,
+  disable debug logging and enable appropriate optimizations to reduce RAM/ROM
+  usage
+- **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
+  and BLE for commissioning
+- **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when OTA
+  is enabled
 
 ---
 
 Made by Telink Semiconductor
 
--   [Website](https://www.telink-semi.com/)
--   [Forum](https://forum.telink-semi.cn/)
--   [Documentation](https://doc.telink-semi.cn/)
+- [Website](https://www.telink-semi.com/)
+- [Forum](https://forum.telink-semi.cn/)
+- [Documentation](https://doc.telink-semi.cn/)

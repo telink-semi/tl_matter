@@ -8,8 +8,8 @@ platforms.
 
 ### Chip and Board used in the guide
 
-| Board target | Chip Family | EVK Version    | Flash (default) | Notes                                 |
-| ------------ | ----------- | -------------- | :-------------: | ------------------------------------- |
+| Board target | Chip Family | EVK Version    | Flash (default) | Notes                                                         |
+| ------------ | ----------- | -------------- | :-------------: | ------------------------------------------------------------- |
 | `tl3238x`    | TL323X      | C1T388A20_V1.1 |      2 MB       | Matter only by default, Dual-mode (Matter + Zigbee) supported |
 
 > See the [Release Notes](./releases/telink_release_notes.md) for the exact chip
@@ -29,22 +29,22 @@ platforms.
 
 ### Software
 
-| Software                                                                     | Description                                                                 |
-| ---------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| Software                                                                      | Description                                                                   |
+| ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------- |
 | [BDT flashing tool](https://doc.telink-semi.cn/tools/bdt/Linux/BDT_Linux.zip) | Telink BDT (Burning and Debugging Tool) for Linux, for flashing and debugging |
-| Toolchain                                                                    | riscv64-zephyr-elf, for building Matter firmware                           |
-| UART terminal                                                                | For viewing device logs                                                    |
-| [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr)                | Provides the underlying drivers and system support                         |
-| [Telink Matter SDK](https://github.com/telink-semi/tl_matter)                | For developing Matter smart-home devices                                   |
+| Toolchain                                                                     | riscv64-zephyr-elf, for building Matter firmware                              |
+| UART terminal                                                                 | For viewing device logs                                                       |
+| [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr)                 | Provides the underlying drivers and system support                            |
+| [Telink Matter SDK](https://github.com/telink-semi/tl_matter)                 | For developing Matter smart-home devices                                      |
 
 ### Telink Matter ↔ Telink Zephyr Dependency
 
 The Telink Matter SDK is built **on top of** the Telink Zephyr SDK. The two are
 tightly coupled and must be used as a matched pair:
 
-| Component                                                | Role                                                                                                                  | Required |
-| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | :------: |
-| **Telink Zephyr SDK** (`dev-tlk_v4.1` branch)            | Provides the Zephyr RTOS core, Telink HAL, BLE stack, MCUBoot, OpenThread, the WEST tool and build toolchain          |    ✅    |
+| Component                                                | Role                                                                                                                        | Required |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | :------: |
+| **Telink Zephyr SDK** (`dev-tlk_v4.1` branch)            | Provides the Zephyr RTOS core, Telink HAL, BLE stack, MCUBoot, OpenThread, the WEST tool and build toolchain                |    ✅    |
 | **Telink Matter SDK** (`dev-tlk_v1.5` branch, this repo) | Provides the Matter protocol stack and Telink example applications; consumes the Telink Zephyr SDK via `TELINK_ZEPHYR_BASE` |    ✅    |
 
 Both are required — the Matter SDK cannot be built without the Zephyr SDK, and
@@ -61,8 +61,7 @@ The Telink Matter examples use `west build` and require the Telink Zephyr SDK to
 be installed and exported via `TELINK_ZEPHYR_BASE`.
 
 Set up the Telink Zephyr SDK first, then build and flash a sample application to
-verify the environment.
-For the full setup, build, and flashing instructions,
+verify the environment. For the full setup, build, and flashing instructions,
 see the
 [Telink Zephyr SDK Getting Started guide](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/doc/telink/getting_started/index.md).
 
@@ -79,6 +78,7 @@ sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
 ### 2.2 Clone and set up the Matter repository
 
 ```bash
+mkdir -p ~/zephyrproject && cd ~/zephyrproject
 git clone https://github.com/telink-semi/tl_matter.git connectedhomeip
 cd connectedhomeip
 git checkout <telink_matter_branch>     # e.g. dev-tlk_v1.5
@@ -122,7 +122,8 @@ west build -b tl3238x
 The built firmware is at `build/zephyr/zephyr.bin`.
 
 > For other configurations (flash size, OTA + LZMA, dual-mode Matter + Zigbee),
-> see [Appendix: TL3238X build configurations](#appendix-tl3238x-build-configurations).
+> see
+> [Appendix: TL3238X build configurations](#appendix-tl3238x-build-configurations).
 
 ## Step 4: Flash the firmware
 
@@ -175,12 +176,12 @@ The on-board buttons and LEDs provide basic control and status feedback:
 
 ## Next steps
 
--   [Telink Release Notes](./releases/telink_release_notes.md) — version info,
-    chip/EVK versions, per-example support matrix, and resource usage tables.
--   [Telink Zephyr Getting Started](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/doc/telink/getting_started/index.md)
-    — Zephyr SDK setup, BDT flashing details, and board overviews.
--   Per-example `README.md` files under `examples/<app>/telink/` —
-    example-specific build commands, button/LED mappings, and chip-tool usage.
+- [Telink Release Notes](./releases/telink_release_notes.md) — version info,
+  chip/EVK versions, per-example support matrix, and resource usage tables.
+- [Telink Zephyr Getting Started](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/doc/telink/getting_started/index.md)
+  — Zephyr SDK setup, BDT flashing details, and board overviews.
+- Per-example `README.md` files under `examples/<app>/telink/` —
+  example-specific build commands, button/LED mappings, and chip-tool usage.
 
 ## Appendix: TL3238X build configurations
 
@@ -199,7 +200,7 @@ TL3238X supports several configurations depending on flash size and dual-mode
 Example — 2 MB Flash with OTA + LZMA, software version 2:
 
 ```bash
-west build -p -b tl3238x -d build_tl3238x_lzma_v1 -- \
+west build -p -b tl3238x -d build_tl3238x_lzma_v2 -- \
   -DCONF_FILE="prj.conf boards/tl3238x_2m_flash_ota_lzma.conf" \
   -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2
 ```
@@ -214,20 +215,26 @@ west build -b tl3238x -- -DFLASH_SIZE=4m
 
 Each supported board ships a dedicated `*_README.md` under
 `examples/<app>/telink/boards/` with the exact build commands for every
-configuration of that board (default, OTA + LZMA, dual-mode Matter + Zigbee,
-4 MB flash, Software Version 2 for DFU/OTA images, etc.).
+configuration of that board (default, OTA + LZMA, dual-mode Matter + Zigbee, 4
+MB flash, Software Version 2 for DFU/OTA images, etc.).
 
 ### Lighting App
 
--   TL3238X: [tl3238x_README.md](../../../examples/lighting-app/telink/boards/tl3238x_README.md)
--   TL5218X: [tl5218x_README.md](../../../examples/lighting-app/telink/boards/tl5218x_README.md)
--   TL7218X: [tl7218x_README.md](../../../examples/lighting-app/telink/boards/tl7218x_README.md)
+- TL3238X:
+  [tl3238x_README.md](../../../examples/lighting-app/telink/boards/tl3238x_README.md)
+- TL5218X:
+  [tl5218x_README.md](../../../examples/lighting-app/telink/boards/tl5218x_README.md)
+- TL7218X:
+  [tl7218x_README.md](../../../examples/lighting-app/telink/boards/tl7218x_README.md)
 
 ### Light Switch App
 
--   TL3238X Retention: [tl3238x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl3238x_retention_README.md)
--   TL5218X Retention: [tl5218x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl5218x_retention_README.md)
--   TL7218X Retention: [tl7218x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl7218x_retention_README.md)
+- TL3238X Retention:
+  [tl3238x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl3238x_retention_README.md)
+- TL5218X Retention:
+  [tl5218x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl5218x_retention_README.md)
+- TL7218X Retention:
+  [tl7218x_retention_README.md](../../../examples/light-switch-app/telink/boards/tl7218x_retention_README.md)
 
 ## FAQ
 

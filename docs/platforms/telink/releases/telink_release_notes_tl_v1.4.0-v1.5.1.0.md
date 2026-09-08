@@ -6,9 +6,9 @@
 
 ---
 
--   **Release Type:** Pre-release (Beta)
--   **Tag Version:**
-    [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)
+- **Release Type:** Pre-release (Beta)
+- **Tag Version:**
+  [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)
 
 <!-- -   **Branch:**
     [dev-tlk_v1.5](https://github.com/telink-semi/tl_matter/tree/dev-tlk_v1.5)
@@ -28,55 +28,55 @@ TL521X (A0) with the lighting-app.
 
 ## ✨ Highlights
 
-| Category           | Details                                    |
-| ------------------ | ------------------------------------------ |
-| **Matter Support** | Matter 1.5 protocol stack                  |
-| **Supported Chips**| TL521X                                     |
-| **Sample Apps**    | Lighting (lighting-app)                    |
-| **OTA**            | OTA requestor and compress-LZMA support    |
-| **Factory Data**   | Factory data provisioning support          |
-| **Dual Mode**      | Matter + Zigbee dual mode on 4MB flash     |
+| Category            | Details                                 |
+| ------------------- | --------------------------------------- |
+| **Matter Support**  | Matter 1.5 protocol stack               |
+| **Supported Chips** | TL521X                                  |
+| **Sample Apps**     | Lighting (lighting-app)                 |
+| **OTA**             | OTA requestor and compress-LZMA support |
+| **Factory Data**    | Factory data provisioning support       |
+| **Dual Mode**       | Matter + Zigbee dual mode on 4MB flash  |
 
 ---
 
 ## 🆕 New Features
 
--   ✅ TL521X SoC platform support with lighting-app
--   ✅ Add flash overlays for TL5218X 2MB and 4MB flash variants, including LZMA
-    compression and backup overlays
--   ✅ LZMA compression support for OTA images
--   ✅ Factory data provisioning support
--   ✅ Matter + Zigbee dual-mode support on 4MB flash
--   ✅ Add Aliro (Apple Home) delegate for the door lock example (#25)
--   ✅ Enable `APP_SET_DEVICE_INFO_PROVIDER` for the All Clusters Minimal
-    example (#40)
+- ✅ TL521X SoC platform support with lighting-app
+- ✅ Add flash overlays for TL5218X 2MB and 4MB flash variants, including LZMA
+  compression and backup overlays
+- ✅ LZMA compression support for OTA images
+- ✅ Factory data provisioning support
+- ✅ Matter + Zigbee dual-mode support on 4MB flash
+- ✅ Add Aliro (Apple Home) delegate for the door lock example (#25)
+- ✅ Enable `APP_SET_DEVICE_INFO_PROVIDER` for the All Clusters Minimal example
+  (#40)
 
 ---
 
 ## 🐛 Bug Fixes
 
-| Issue | Component | Description                                                                                                                             |
-| ----- | --------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Issue | Component | Description                                                                                                                                                      |
+| ----- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | #40   | Build     | Compile `DFUOverSMP.cpp` in the common chip-module so examples using `AppTaskCommon.cpp` link DFU-over-SMP support (fixes `air-quality-sensor-app` link failure) |
-| #47   | Build/OTA | Use `SOC_FAMILY_TELINK_TLX` instead of the removed `SOC_RISCV_TELINK_TLX` so the MCUboot build target is not skipped on TLX-family OTA builds |
-| #51   | SoC       | Update the `tl_zephyr` revision to add the TL521X radio reset at boot for the Zigbee→Matter switch (Zephyr #836) |
+| #47   | Build/OTA | Use `SOC_FAMILY_TELINK_TLX` instead of the removed `SOC_RISCV_TELINK_TLX` so the MCUboot build target is not skipped on TLX-family OTA builds                    |
+| #51   | SoC       | Update the `tl_zephyr` revision to add the TL521X radio reset at boot for the Zigbee→Matter switch (Zephyr #836)                                                 |
 
 ---
 
 ## 📦 Updates / Dependencies
 
-| Component                 | Repository                                                         | Commit                                                                                                 | Notes                                        |
-| ------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)  | [`e87fbee`](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b)  | Tracks `dev-tlk_v4.1`; TL521x SoC split + radio reset for Zigbee→Matter |
-| **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr) | [`3bddf88`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/3bddf885c0a1e4342393b7c6b668ece104c12102) | Required by TL521X |
-| **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink) | [`bd870dc`](https://github.com/telink-semi/hal_telink/commit/bd870dc273989756f908077761a5e3adbd7d108f)  | Contains hal_v1 and hal_v2 sources |
-| **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot) | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927) | Bootloader; required for OTA/DFU |
-| **OpenThread Telink**     | [telink-semi/tl_openthread](https://github.com/telink-semi/tl_openthread) | [`542aaab`](https://github.com/telink-semi/tl_openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee) | OpenThread source adapted for Telink |
-| **OpenThread Telink Lib** | [telink-semi/tl_openthread_libs](https://github.com/telink-semi/tl_openthread_libs) | [`f69c186`](https://github.com/telink-semi/tl_openthread_libs/commit/f69c186d65a41259480e87ccf9d2a7f665249778) | Pre-built OpenThread library for Telink |
-| **Telink XZ (LZMA)**      | [telink-semi/tl_xz](https://github.com/telink-semi/tl_xz) | [`831f338`](https://github.com/telink-semi/tl_xz/commit/831f338fd6784661d3bec62fd01060ee4d7d373d) | LZMA compression library module |
+| Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                                                   |
+| ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`e87fbee`](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b)          | Tracks `dev-tlk_v4.1`; TL521x SoC split + radio reset for Zigbee→Matter |
+| **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`3bddf88`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/3bddf885c0a1e4342393b7c6b668ece104c12102)  | Required by TL521X                                                      |
+| **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`bd870dc`](https://github.com/telink-semi/hal_telink/commit/bd870dc273989756f908077761a5e3adbd7d108f)         | Contains hal_v1 and hal_v2 sources                                      |
+| **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Bootloader; required for OTA/DFU                                        |
+| **OpenThread Telink**     | [telink-semi/tl_openthread](https://github.com/telink-semi/tl_openthread)           | [`542aaab`](https://github.com/telink-semi/tl_openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee)      | OpenThread source adapted for Telink                                    |
+| **OpenThread Telink Lib** | [telink-semi/tl_openthread_libs](https://github.com/telink-semi/tl_openthread_libs) | [`f69c186`](https://github.com/telink-semi/tl_openthread_libs/commit/f69c186d65a41259480e87ccf9d2a7f665249778) | Pre-built OpenThread library for Telink                                 |
+| **Telink XZ (LZMA)**      | [telink-semi/tl_xz](https://github.com/telink-semi/tl_xz)                           | [`831f338`](https://github.com/telink-semi/tl_xz/commit/831f338fd6784661d3bec62fd01060ee4d7d373d)              | LZMA compression library module                                         |
 
--   Updated Zephyr SDK references from `telink-semi/zephyr` to
-    `telink-semi/tl_zephyr` (repo renamed, links updated accordingly).
+- Updated Zephyr SDK references from `telink-semi/zephyr` to
+  `telink-semi/tl_zephyr` (repo renamed, links updated accordingly).
 
 ---
 
@@ -103,32 +103,32 @@ support.
 
 ---
 
-## 📋 Version Information
+## Version Information
 
 ### Matter SDK &amp; Toolchain
 
 | Component              | Version                                                                                                                                                                                                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Matter SDK Version** | Telink Matter v1.5                                                                                                                                                                                                                                                                      |
+| **Matter SDK Version** | Telink Matter v1.5                                                                                                                                                                                                                                                                        |
 | **Matter Branch**      | master                                                                                                                                                                                                                                                                                    |
 | **Commit**             | [f4a8cf9](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391) (the previous one of [15a68d7](https://github.com/project-chip/connectedhomeip/commit/15a68d7026b1cd34a0d4cf35dadc7558e503d2cb) that community upgraded Matter version to 1.6) |
 | **Toolchain**          | Zephyr SDK v0.17.0 riscv64-zephyr-elf                                                                                                                                                                                                                                                     |
 
 ### Telink Matter SDK
 
-| Property          | Version                                                                               |
-| ----------------- | ------------------------------------------------------------------------------------- |
-| **Branch**        | [dev-tlk_v1.5](https://github.com/telink-semi/tl_matter/tree/dev-tlk_v1.5)            |
+| Property          | Version                                                                                              |
+| ----------------- | ---------------------------------------------------------------------------------------------------- |
+| **Branch**        | [dev-tlk_v1.5](https://github.com/telink-semi/tl_matter/tree/dev-tlk_v1.5)                           |
 | **Target Commit** | [eec1e19d](https://github.com/telink-semi/tl_matter/commit/eec1e19d1f1d537c322e0c4f9599cde5c96e1409) |
-| **Tag Name**      | [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5) |
-| **Release Type**  | Pre-release (Beta)       |                                                                |
+| **Tag Name**      | [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)     |
+| **Release Type**  | Pre-release (Beta)                                                                                   |
 
 ### Telink Zephyr SDK
 
-| Property   | Version                                                                                                  |
-| ---------- | -------------------------------------------------------------------------------------------------------- |
-| **Branch** | [dev-tlk_v4.1](https://github.com/telink-semi/tl_zephyr/tree/dev-tlk_v4.1)                               |
-| **Commit** | [e87fbee](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b)     |
+| Property   | Version                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------- |
+| **Branch** | [dev-tlk_v4.1](https://github.com/telink-semi/tl_zephyr/tree/dev-tlk_v4.1)                          |
+| **Commit** | [e87fbee](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b) |
 
 ### Chip &amp; Hardware Versions
 
@@ -162,10 +162,10 @@ that supports it (see
 
 ### Notes on Platform Support
 
--   TL521X is the latest Telink RISC-V SoC family. This release supports the
-    lighting-app on TL521X only.
--   For build commands per board/app, refer to the per-board `*_README.md` files
-    inside each example's `boards/` directory.
+- TL521X is the latest Telink RISC-V SoC family. This release supports the
+  lighting-app on TL521X only.
+- For build commands per board/app, refer to the per-board `*_README.md` files
+  inside each example's `boards/` directory.
 
 ---
 
@@ -193,25 +193,26 @@ Telink TL521X platform, built with the Matter SDK and Zephyr RTOS.
 > 📌 **Note:** TL521X currently only supports lighting-app. Memory usage data is
 > extracted from the linker output (`Memory region` summary) of the build logs.
 > `RAM_ILM_N` (instruction RAM) and `RAM` (data RAM) are 128 KB each; `ROM` is
-> the application slot0 partition (1940 KB with the 4MB flash dual-mode overlay).
-> For a detailed RAM/ROM symbol breakdown, run `west build -t ram_report` /
-> `west build -t rom_report` in the build directory.
+> the application slot0 partition (1940 KB with the 4MB flash dual-mode
+> overlay). For a detailed RAM/ROM symbol breakdown, run
+> `west build -t ram_report` / `west build -t rom_report` in the build
+> directory.
 
 ---
 
 ### 📝 Additional Notes
 
--   **Memory Regions:** May vary between chip variants; check individual board
-    configurations
--   **Build Config:** Matter builds use `west build` directly from each
-    example's `telink` directory; CI builds use the Matter `build_examples.py`
-    system with Telink targets
--   **Production Optimizations:** For production builds, disable debug logging
-    and enable appropriate optimizations to reduce RAM/ROM usage
--   **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
-    and BLE for commissioning
--   **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when
-    OTA is enabled
+- **Memory Regions:** May vary between chip variants; check individual board
+  configurations
+- **Build Config:** Matter builds use `west build` directly from each example's
+  `telink` directory; CI builds use the Matter `build_examples.py` system with
+  Telink targets
+- **Production Optimizations:** For production builds, disable debug logging and
+  enable appropriate optimizations to reduce RAM/ROM usage
+- **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
+  and BLE for commissioning
+- **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when OTA
+  is enabled
 
 ---
 
@@ -219,6 +220,6 @@ Telink TL521X platform, built with the Matter SDK and Zephyr RTOS.
 
 Made by Telink Semiconductor
 
--   [Website](https://www.telink-semi.com/)
--   [Forum](https://forum.telink-semi.cn/)
--   [Documentation](https://doc.telink-semi.cn/)
+- [Website](https://www.telink-semi.com/)
+- [Forum](https://forum.telink-semi.cn/)
+- [Documentation](https://doc.telink-semi.cn/)
