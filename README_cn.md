@@ -1,6 +1,6 @@
 # Telink Matter SDK (tl_matter) 介绍
 
-- [英文 README](README.md)
+-   [英文 README](README.md)
 
 [![Telink Website](https://img.shields.io/badge/Website-Telink-blue?style=flat-square)](https://www.telink-semi.com/)
 [![Forum](https://img.shields.io/badge/Forum-Telink-green?style=flat-square)](https://forum.telink-semi.cn/)
@@ -12,25 +12,24 @@
 > 📖 本文档是 **Telink Matter SDK**（fork）的 README。上游 Matter（Project
 > CHIP）的 README 请参阅 [MATTER_README.md](MATTER_README.md)。
 
-**基于 Connected Home over IP（CHIP）项目的 Telink RISC-V
-SoC 平台 Matter 协议实现**
+**基于 Connected Home over IP（CHIP）项目的 Telink RISC-V SoC 平台 Matter 协议实
+现**
 
-- 开发环境搭建、SDK 获取及快速上手说明，请参阅
-  [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md)。
-- 更深入的讲解，请参阅在线
-  [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
-  （**Obtaining Matter Source Code** 章节包含初始环境搭建）。
-- 支持的设备及资源占用的详细列表，请参阅
-  [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
+-   开发环境搭建、SDK 获取及快速上手说明，请参阅
+    [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md)。
+-   更深入的讲解，请参阅在线
+    [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
+    （**Obtaining Matter Source Code** 章节包含初始环境搭建）。
+-   支持的设备及资源占用的详细列表，请参阅
+    [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
 
 ---
 
 ## 📖 SDK 介绍
 
-Telink Matter SDK 是一个在 Telink RISC-V
-SoC 平台上实现 Matter 协议的软件开发平台。它基于 Connected Home over
-IP（CHIP）项目构建，并集成 Telink Zephyr
-SDK，为 Telink 芯片提供完整的 Matter-over-Thread 支持。
+Telink Matter SDK 是一个在 Telink RISC-V SoC 平台上实现 Matter 协议的软件开发平
+台。它基于 Connected Home over IP（CHIP）项目构建，并集成 Telink Zephyr SDK，为
+Telink 芯片提供完整的 Matter-over-Thread 支持。
 
 ### SDK 核心能力
 
@@ -46,12 +45,13 @@ SDK，为 Telink 芯片提供完整的 Matter-over-Thread 支持。
 | 启动管理    | MCUboot 引导加载程序集成                |
 | 示例应用    | 多个 Matter 示例应用，用于验证与开发    |
 
-您可以基于本 SDK 开发具有跨厂商互操作能力的 Telink
-Matter 智能家居终端设备，覆盖从原型验证、设备开发到量产测试的完整流程。
+您可以基于本 SDK 开发具有跨厂商互操作能力的 Telink Matter 智能家居终端设备，覆盖
+从原型验证、设备开发到量产测试的完整流程。
 
 ### 支持的示例
 
-本 SDK 为以下 Matter 示例应用提供 Telink 平台移植。每个 release 实际验证过的芯片/EVK 支持矩阵，请参阅
+本 SDK 为以下 Matter 示例应用提供 Telink 平台移植。每个 release 实际验证过的芯片
+/EVK 支持矩阵，请参阅
 [Release Note](docs/platforms/telink/releases/telink_release_notes.md)。
 
 | 类别               | 示例                                                                                                                                                                                                     |

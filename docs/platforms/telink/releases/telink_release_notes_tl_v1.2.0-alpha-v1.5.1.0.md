@@ -6,13 +6,13 @@
 
 ---
 
-- **Release Type:** Pre-Release (Alpha)
-- **Branch:**
-  [pre_release-v1.2-v1.5-branch](https://github.com/telink-semi/connectedhomeip/tree/pre_release-v1.2-v1.5-branch)
-- **Tag Version:**
-  [tl_v1.2.0-alpha-v1.5.1](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.2.0-alpha-v1.5.1)
-- **Target Commit:**
-  [50cae34](https://github.com/telink-semi/connectedhomeip/commit/50cae34e79ecbd5af5644eb60f6aa564f6c48ab4)
+-   **Release Type:** Pre-Release (Alpha)
+-   **Branch:**
+    [pre_release-v1.2-v1.5-branch](https://github.com/telink-semi/connectedhomeip/tree/pre_release-v1.2-v1.5-branch)
+-   **Tag Version:**
+    [tl_v1.2.0-alpha-v1.5.1](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.2.0-alpha-v1.5.1)
+-   **Target Commit:**
+    [50cae34](https://github.com/telink-semi/connectedhomeip/commit/50cae34e79ecbd5af5644eb60f6aa564f6c48ab4)
 
 ---
 
@@ -41,20 +41,20 @@ on Telink chips including TL323X, TL521X, and TL721X.
 
 ## 🆕 New Features
 
-- ✅ New TL521X SoC platform support with lighting-app
-- ✅ Add BLE/Thread concurrent mode support on TL7218X and TL3238X, enabling BLE
-  to run concurrently with an active Thread network
-- ✅ Introduce CHIP_CONCURRENT_MODE Kconfig option that keeps the BLE controller
-  alive after Thread commissioning
-- ✅ Add BLE idle mode and tl_dual_mode_start coordination for TLX RF
-  coexistence
-- ✅ Implement Channel Sounding (CS) RAS reflector (CsReflector) for TL7218X
-- ✅ Add concurrent board configs for TL3238X and TL7218X with README docs
-- ✅ Add flash overlays for TL5218X 2MB and 4MB flash variants, including LZMA
-  compression and backup overlays
-- ✅ LZMA compression support for OTA images
-- ✅ Factory data provisioning support
-- ✅ Power management with retention RAM support
+-   ✅ New TL521X SoC platform support with lighting-app
+-   ✅ Add BLE/Thread concurrent mode support on TL7218X and TL3238X, enabling
+    BLE to run concurrently with an active Thread network
+-   ✅ Introduce CHIP_CONCURRENT_MODE Kconfig option that keeps the BLE
+    controller alive after Thread commissioning
+-   ✅ Add BLE idle mode and tl_dual_mode_start coordination for TLX RF
+    coexistence
+-   ✅ Implement Channel Sounding (CS) RAS reflector (CsReflector) for TL7218X
+-   ✅ Add concurrent board configs for TL3238X and TL7218X with README docs
+-   ✅ Add flash overlays for TL5218X 2MB and 4MB flash variants, including LZMA
+    compression and backup overlays
+-   ✅ LZMA compression support for OTA images
+-   ✅ Factory data provisioning support
+-   ✅ Power management with retention RAM support
 
 ---
 
@@ -91,18 +91,18 @@ Thread network on selected Telink SoCs.
 
 ## 📦 Updates
 
-- Updated Telink BLE SDK for improved RF performance
-  ([commit:53eb98b32ea79ed7ab38f5daabde0a78a7880cd9](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/53eb98b32ea79ed7ab38f5daabde0a78a7880cd9))
-- Updated Telink HAL Zephyr to support TL721X
-  hal_v2([commit:bdf0d7927d31809340610b5e1575667e2d862110](https://github.com/telink-semi/hal_telink/commit/bdf0d7927d31809340610b5e1575667e2d862110))
-- Updated MCUBoot with Telink-specific flash operation
-  ([commit:ce0da85c39c749df49b0ec62b33d2ecdea24c927](https://github.com/telink-semi/mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927))
-- Updated OpenThread Telink source code
-  ([commit:542aaab44e1308e1a8a24573dfbd413fade342ee](https://github.com/telink-semi/openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee))
-- Updated OpenThread Telink library
-  ([commit:308dae2f80084f87073cfd4fbd30f1be0799be7b](https://github.com/telink-semi/openthread_telink_lib/commit/308dae2f80084f87073cfd4fbd30f1be0799be7b))
-- Updated Telink Zephyr SDK to support TL521X, TL323X and TL721X hal_v2
-  ([commit:8e3ccc07900692fe5a9990cd517203de61b2eefc](https://github.com/telink-semi/zephyr/commit/8e3ccc07900692fe5a9990cd517203de61b2eefc))
+-   Updated Telink BLE SDK for improved RF performance
+    ([commit:53eb98b32ea79ed7ab38f5daabde0a78a7880cd9](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/53eb98b32ea79ed7ab38f5daabde0a78a7880cd9))
+-   Updated Telink HAL Zephyr to support TL721X
+    hal_v2([commit:bdf0d7927d31809340610b5e1575667e2d862110](https://github.com/telink-semi/hal_telink/commit/bdf0d7927d31809340610b5e1575667e2d862110))
+-   Updated MCUBoot with Telink-specific flash operation
+    ([commit:ce0da85c39c749df49b0ec62b33d2ecdea24c927](https://github.com/telink-semi/mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927))
+-   Updated OpenThread Telink source code
+    ([commit:542aaab44e1308e1a8a24573dfbd413fade342ee](https://github.com/telink-semi/openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee))
+-   Updated OpenThread Telink library
+    ([commit:308dae2f80084f87073cfd4fbd30f1be0799be7b](https://github.com/telink-semi/openthread_telink_lib/commit/308dae2f80084f87073cfd4fbd30f1be0799be7b))
+-   Updated Telink Zephyr SDK to support TL521X, TL323X and TL721X hal_v2
+    ([commit:8e3ccc07900692fe5a9990cd517203de61b2eefc](https://github.com/telink-semi/zephyr/commit/8e3ccc07900692fe5a9990cd517203de61b2eefc))
 
 ---
 
@@ -200,18 +200,18 @@ example and the Telink chip platforms that support it (see
 
 ### Notes on Platform Support
 
-- **Tested combinations (✅):** TL323X and TL721X with lighting-app and
-  light-switch-app have been fully tested.
-- **Supported but untested (🟡):** TL721X bridge-app and window-app are compiled
-  successfully but have not been functionally validated.
-- **Untested (·):** Combinations not listed are not built or validated.
-- TL323X / TL521X / TL721X are the latest Telink RISC-V SoC families. Lighting
-  and light-switch apps are supported across TL323X and TL721X; TL521X supports
-  lighting-app only.
-- The light-switch-app uses the `*_retention` board target (power management
-  with retention RAM).
-- For build commands per board/app, refer to the per-board `*_README.md` files
-  inside each example's `boards/` directory.
+-   **Tested combinations (✅):** TL323X and TL721X with lighting-app and
+    light-switch-app have been fully tested.
+-   **Supported but untested (🟡):** TL721X bridge-app and window-app are
+    compiled successfully but have not been functionally validated.
+-   **Untested (·):** Combinations not listed are not built or validated.
+-   TL323X / TL521X / TL721X are the latest Telink RISC-V SoC families. Lighting
+    and light-switch apps are supported across TL323X and TL721X; TL521X
+    supports lighting-app only.
+-   The light-switch-app uses the `*_retention` board target (power management
+    with retention RAM).
+-   For build commands per board/app, refer to the per-board `*_README.md` files
+    inside each example's `boards/` directory.
 
 ---
 
@@ -263,15 +263,15 @@ output (`Memory region` summary) of the build logs.
 
 > 📌 **Notes:**
 >
-> - **Firmware (merged.bin)** = MCUBoot (at offset 0) + gap padding + slot0
->   application image (`zephyr.signed.bin`). This is the file flashed to the
->   device.
-> - All targets fit within the slot0 partition (1152 KB) with LZMA compression
->   enabled.
-> - The LZMA-compressed DFU image (`merged_dfu.lzma.bin`) is smaller than the
->   signed image (e.g. 942630 B → 547530 B for TL7218X lighting).
-> - For a detailed RAM/ROM symbol breakdown, run `west build -t ram_report` /
->   `west build -t rom_report` in the build directory.
+> -   **Firmware (merged.bin)** = MCUBoot (at offset 0) + gap padding + slot0
+>     application image (`zephyr.signed.bin`). This is the file flashed to the
+>     device.
+> -   All targets fit within the slot0 partition (1152 KB) with LZMA compression
+>     enabled.
+> -   The LZMA-compressed DFU image (`merged_dfu.lzma.bin`) is smaller than the
+>     signed image (e.g. 942630 B → 547530 B for TL7218X lighting).
+> -   For a detailed RAM/ROM symbol breakdown, run `west build -t ram_report` /
+>     `west build -t rom_report` in the build directory.
 
 ### TL521X (tl5218x) — Lighting App Code Size
 
@@ -289,17 +289,17 @@ output (`Memory region` summary) of the build logs.
 
 ### 📝 Additional Notes
 
-- **Memory Regions:** May vary between chip variants; check individual board
-  configurations
-- **Build Config:** Matter builds use `west build` directly from each example's
-  `telink` directory; CI builds use the Matter `build_examples.py` system with
-  Telink targets
-- **Production Optimizations:** For production builds, disable debug logging and
-  enable appropriate optimizations to reduce RAM/ROM usage
-- **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
-  and BLE for commissioning
-- **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when OTA
-  is enabled
+-   **Memory Regions:** May vary between chip variants; check individual board
+    configurations
+-   **Build Config:** Matter builds use `west build` directly from each
+    example's `telink` directory; CI builds use the Matter `build_examples.py`
+    system with Telink targets
+-   **Production Optimizations:** For production builds, disable debug logging
+    and enable appropriate optimizations to reduce RAM/ROM usage
+-   **Bluetooth &amp; OpenThread:** Matter uses OpenThread for Thread networking
+    and BLE for commissioning
+-   **OTA Images:** Signed OTA images (`zephyr.signed.bin`) are generated when
+    OTA is enabled
 
 ---
 
@@ -307,6 +307,6 @@ output (`Memory region` summary) of the build logs.
 
 Made by Telink Semiconductor
 
-- [Website](https://www.telink-semi.com/)
-- [Forum](https://forum.telink-semi.cn/)
-- [Documentation](https://doc.telink-semi.cn/)
+-   [Website](https://www.telink-semi.com/)
+-   [Forum](https://forum.telink-semi.cn/)
+-   [Documentation](https://doc.telink-semi.cn/)

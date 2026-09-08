@@ -1,6 +1,6 @@
 # Telink Matter SDK
 
-- [Chinese README](README_cn.md)
+-   [Chinese README](README_cn.md)
 
 [![Telink Website](https://img.shields.io/badge/Website-Telink-blue?style=flat-square)](https://www.telink-semi.com/)
 [![Forum](https://img.shields.io/badge/Forum-Telink-green?style=flat-square)](https://forum.telink-semi.cn/)
@@ -15,14 +15,14 @@
 **A Matter protocol implementation for Telink RISC-V SoC platforms based on the
 Connected Home over IP (CHIP) project**
 
-- For development environment setup, SDK acquisition, and quick-start
-  instructions, refer to the
-  [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md).
-- For a deeper walkthrough, see the online
-  [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
-  (Chapter **Obtaining Matter Source Code** covers the initial setup).
-- For a detailed list of supported devices and resource usage, refer to the
-  [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
+-   For development environment setup, SDK acquisition, and quick-start
+    instructions, refer to the
+    [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md).
+-   For a deeper walkthrough, see the online
+    [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
+    (Chapter **Obtaining Matter Source Code** covers the initial setup).
+-   For a detailed list of supported devices and resource usage, refer to the
+    [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
 
 ---
 
