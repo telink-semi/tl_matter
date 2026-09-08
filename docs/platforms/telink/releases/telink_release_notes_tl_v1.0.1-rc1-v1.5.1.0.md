@@ -1,7 +1,7 @@
 # Telink Matter SDK Release Note
 
 [![Version](https://img.shields.io/badge/Version-tl_v1.0.1--rc1--v1.5-blue?style=flat-square)](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.0.1-rc1-v1.5)
-[![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](../../../../LICENSE)
 [![Matter](https://img.shields.io/badge/Matter-v1.5-green?style=flat-square)](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391)
 
 ---
@@ -55,6 +55,12 @@ on Telink chips including TL323X and TL721X.
 | **Branch**       | [release-v1.0-v1.5-branch](https://github.com/telink-semi/connectedhomeip/tree/release-v1.0-v1.5-branch) |
 | **Tag Name**     | [tl_v1.0.1-rc1-v1.5](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.0.1-rc1-v1.5)     |
 | **Release Type** | Pre-Release (rc1)                                                                                        |
+
+### Telink Zephyr SDK
+
+| Property   | Version                                                                                              |
+| ---------- | ---------------------------------------------------------------------------------------------------- |
+| **Commit** | [7b102df](https://github.com/telink-semi/tl_zephyr/commit/7b102dfc9bc4c27e95dc84bd6291caf46b6b070c) |
 
 ### Chip &amp; Hardware Versions
 
