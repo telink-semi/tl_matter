@@ -106,7 +106,6 @@ K_MSGQ_DEFINE(sAppEventQueue, sizeof(AppEvent), kAppEventQueueSize, alignof(AppE
 k_timer sFactoryResetTimer;
 uint8_t sFactoryResetCntr = 0;
 
-bool sIsCommissioningFailed = false;
 bool sIsNetworkProvisioned  = false;
 bool sIsNetworkEnabled      = false;
 bool sIsNetworkAttached     = false;
@@ -376,7 +375,7 @@ static void DoDelayedFactoryReset(struct k_work * work)
     AppTask::MicroSpeechProcessStop();
 #endif
     // Reboot in case of failed commissioning to allow new pairing via BLE
-    if (sIsCommissioningFailed)
+    if (AppTaskCommon::sIsCommissioningFailed)
     {
         ChipLogProgress(DeviceLayer, "Rebooting board");
         sys_reboot(SYS_REBOOT_WARM);
