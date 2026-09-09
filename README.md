@@ -1,4 +1,4 @@
-# Telink Matter SDK
+# Telink Matter SDK (tl_matter) README
 
 -   [Chinese README](README_cn.md)
 
@@ -51,6 +51,16 @@ You can use this SDK to develop Telink Matter smart-home end devices with
 cross-vendor interoperability, covering the full flow from prototyping and
 device development to production testing.
 
+### Typical Applications
+
+| Application Area         | Device Examples                                              |
+| ------------------------ | ------------------------------------------------------------ |
+| Smart lighting           | Smart lights, smart switches, etc.                           |
+| Smart security           | Smart door locks, smoke alarms, carbon monoxide alarms, etc. |
+| Environmental monitoring | Environmental sensing devices, such as air quality sensors   |
+| Smart control            | Thermostats, curtain controllers, water pumps, etc.          |
+| Device interconnection   | Bridges, etc.                                                |
+
 ### Supported Examples
 
 The SDK provides Telink ports for the following Matter example applications. See
@@ -61,6 +71,14 @@ the chip/EVK support matrix validated in each release.
 | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Matter over Thread | lighting-app, light-switch-app, lock-app, contact-sensor-app, smoke-co-alarm-app, temperature-measurement-app, thermostat, air-quality-sensor-app, window-app, pump-app, pump-controller-app, bridge-app |
 | Development tools  | all-clusters-app, all-clusters-minimal-app, shell, ota-requestor-app, chef                                                                                                                               |
+
+### Support Information
+
+For complete and accurate information about supported chip series, development
+boards, development platforms, toolchains, and SDK versions, see the
+[Release Notes](docs/platforms/telink/releases/telink_release_notes.md). After
+opening the Release Notes page, select the version corresponding to the current
+SDK version from the drop-down list on the left.
 
 ---
 
@@ -94,9 +112,16 @@ For version history and detailed changelog, refer to the
 
 ---
 
+## 🤝 Contribution Guide
+
+For information about submitting issues, contributing code, and development
+guidelines, see the [Contribution Guide](CONTRIBUTING.md).
+
+---
+
 ## 📄 License
 
-```
+```text
 Apache License, Version 2.0
 
 Licensed under the Apache License, Version 2.0 (the "License");

@@ -18,7 +18,7 @@
 -   开发环境搭建、SDK 获取及快速上手说明，请参阅
     [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md)。
 -   更深入的讲解，请参阅在线
-    [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
+    [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/)
     （**Obtaining Matter Source Code** 章节包含初始环境搭建）。
 -   支持的设备及资源占用的详细列表，请参阅
     [Release Note](docs/platforms/telink/releases/telink_release_notes.md)
@@ -48,6 +48,16 @@ Telink 芯片提供完整的 Matter-over-Thread 支持。
 您可以基于本 SDK 开发具有跨厂商互操作能力的 Telink Matter 智能家居终端设备，覆盖
 从原型验证、设备开发到量产测试的完整流程。
 
+### 典型应用
+
+| 应用领域 | 设备示例                        |
+| -------- | ------------------------------- |
+| 智能照明 | 智能灯具、智能开关等            |
+| 智能安防 | 智能门锁、烟雾/一氧化碳报警器等 |
+| 环境监测 | 空气质量传感器等环境传感设备    |
+| 智能控制 | 恒温器、窗帘控制器、水泵等      |
+| 设备互联 | 网桥等                          |
+
 ### 支持的示例
 
 本 SDK 为以下 Matter 示例应用提供 Telink 平台移植。每个 release 实际验证过的芯片
@@ -59,6 +69,14 @@ Telink 芯片提供完整的 Matter-over-Thread 支持。
 | Matter over Thread | lighting-app、light-switch-app、lock-app、contact-sensor-app、smoke-co-alarm-app、temperature-measurement-app、thermostat、air-quality-sensor-app、window-app、pump-app、pump-controller-app、bridge-app |
 | 开发工具           | all-clusters-app、all-clusters-minimal-app、shell、ota-requestor-app、chef                                                                                                                               |
 
+### 支持信息
+
+关于完整、准确的芯片型号、对应的开发板、开发平台、工具链以及 SDK 版本的详细信息
+，请参阅
+[Release Notes](docs/platforms/telink/releases/telink_release_notes.md)。打开
+Release Notes 页面后，通过左侧下拉列表，选择与您当前使用的 SDK 版本对应的
+Release Notes 查看。
+
 ---
 
 ## 🚀 快速参考
@@ -67,7 +85,7 @@ Telink 芯片提供完整的 Matter-over-Thread 支持。
 | --------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | **Release Note**      | Telink Matter SDK 变更日志与新特性 | [Telink Matter SDK Release Note](docs/platforms/telink/releases/telink_release_notes.md)                                     |
 | **Get Started Guide** | SDK 快速入门指南                   | [Telink Matter Getting Started](docs/platforms/telink/telink_getting_started.md)                                             |
-| **Developer Guide**   | Telink Matter 开发手册（在线）     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/) |
+| **Developer Guide**   | Telink Matter 开发手册（在线）     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/) |
 | **Examples**          | Matter 示例应用                    | 参见 [examples](examples/)（按 `telink` 筛选）                                                                               |
 | **Dependency**        | Telink Zephyr SDK                  | [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/README.md)                                    |
 
@@ -79,7 +97,7 @@ Telink 芯片提供完整的 Matter-over-Thread 支持。
 | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
 | 🌐 **Telink 官方网站** | [Telink - Chips for a Smarter IoT](https://www.telink-semi.com/)                                                             |
 | 💬 **Telink 论坛**     | [Telink Technical Support](https://forum.telink-semi.cn/)                                                                    |
-| 📖 **文档**            | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/) |
+| 📖 **文档**            | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/) |
 | 📦 **Matter 社区项目** | [Connected Home over IP](https://github.com/project-chip/connectedhomeip)                                                    |
 
 ---
@@ -88,6 +106,12 @@ Telink 芯片提供完整的 Matter-over-Thread 支持。
 
 版本历史及详细变更日志，请参阅
 [Release Note](docs/platforms/telink/releases/telink_release_notes.md)。
+
+---
+
+## 🤝 贡献指南
+
+提交 Issue、贡献代码及开发规范，请参阅 [Contribution Guide](CONTRIBUTING.md)。
 
 ---
 

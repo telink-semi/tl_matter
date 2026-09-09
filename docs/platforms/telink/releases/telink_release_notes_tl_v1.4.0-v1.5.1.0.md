@@ -1,28 +1,21 @@
 # Telink Matter SDK Release Note
 
-[![Version](https://img.shields.io/badge/Version-tl_v1.4.0--beta--v1.5-blue?style=flat-square)](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)
+[![Version](https://img.shields.io/badge/Version-tl_v1.4.0-v1.5-blue?style=flat-square)](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-v1.5)
 [![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](../../../../LICENSE)
 [![Matter](https://img.shields.io/badge/Matter-v1.5-green?style=flat-square)](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391)
 
 ---
 
--   **Release Type:** Pre-release (Beta)
+-   **Release Type:** Release
 -   **Tag Version:**
-    [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)
-
-<!-- -   **Branch:**
-    [dev-tlk_v1.5](https://github.com/telink-semi/tl_matter/tree/dev-tlk_v1.5)
--   **Target Commit:**
-    [eec1e19d](https://github.com/telink-semi/tl_matter/commit/eec1e19d1f1d537c322e0c4f9599cde5c96e1409) -->
+    [tl_v1.4.0-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-v1.5)
 
 ---
 
 ## 📖 Introduction
 
-This release is based on the target commit of `dev-tlk_v1.5` branch, providing
-Matter protocol support for the Telink TL521X SoC platform. It integrates the
-Matter SDK with the Telink Zephyr SDK to enable a Matter-over-Thread device on
-TL521X (A0) with the lighting-app.
+This release is based on the `dev-tlk_v1.5` branch, providing Matter protocol support for the Telink TL521X SoC platform.
+It integrates the Matter SDK with the Telink Zephyr SDK to enable a Matter-over-Thread device on TL521X (A0) with the lighting-app.
 
 ---
 
@@ -67,7 +60,7 @@ TL521X (A0) with the lighting-app.
 
 | Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                                                   |
 | ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`e87fbee`](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b)          | Tracks `dev-tlk_v4.1`; TL521x SoC split + radio reset for Zigbee→Matter |
+| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`ec302e9`](https://github.com/telink-semi/tl_zephyr/commit/ec302e94cb2886f0c71515efbe7344b32449a9ff)          | Tracks `dev-tlk_v4.1`; TL521x SoC split + radio reset for Zigbee→Matter |
 | **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`de6f125`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/de6f125c8ae6d29c4a640ab3526b40ff8c3f0a20)  | Required by TL521X                                                      |
 | **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`bd870dc`](https://github.com/telink-semi/hal_telink/commit/bd870dc273989756f908077761a5e3adbd7d108f)         | Contains hal_v1 and hal_v2 sources                                      |
 | **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Bootloader; required for OTA/DFU                                        |
@@ -110,7 +103,6 @@ support.
 | Component              | Version                                                                                                                                                                                                                                                                                   |
 | ---------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Matter SDK Version** | Telink Matter v1.5                                                                                                                                                                                                                                                                        |
-| **Matter Branch**      | master                                                                                                                                                                                                                                                                                    |
 | **Commit**             | [f4a8cf9](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391) (the previous one of [15a68d7](https://github.com/project-chip/connectedhomeip/commit/15a68d7026b1cd34a0d4cf35dadc7558e503d2cb) that community upgraded Matter version to 1.6) |
 | **Toolchain**          | Zephyr SDK v0.17.0 riscv64-zephyr-elf                                                                                                                                                                                                                                                     |
 
@@ -118,17 +110,15 @@ support.
 
 | Property          | Version                                                                                              |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
-| **Branch**        | [dev-tlk_v1.5](https://github.com/telink-semi/tl_matter/tree/dev-tlk_v1.5)                           |
 | **Target Commit** | [eec1e19d](https://github.com/telink-semi/tl_matter/commit/eec1e19d1f1d537c322e0c4f9599cde5c96e1409) |
-| **Tag Name**      | [tl_v1.4.0-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-beta-v1.5)     |
-| **Release Type**  | Pre-release (Beta)                                                                                   |
+| **Tag Name**      | [tl_v1.4.0-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-v1.5)     |
+| **Release Type**  | Release                                                                                   |
 
 ### Telink Zephyr SDK
 
 | Property   | Version                                                                                             |
 | ---------- | --------------------------------------------------------------------------------------------------- |
-| **Branch** | [dev-tlk_v4.1](https://github.com/telink-semi/tl_zephyr/tree/dev-tlk_v4.1)                          |
-| **Commit** | [e87fbee](https://github.com/telink-semi/tl_zephyr/commit/e87fbee38775b103bd676f8412e6a9d651f08d6b) |
+| **Commit** | [ec302e9](https://github.com/telink-semi/tl_zephyr/commit/ec302e94cb2886f0c71515efbe7344b32449a9ff) |
 
 ### Chip &amp; Hardware Versions
 
