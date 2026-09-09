@@ -46,6 +46,10 @@ the lighting-app.
 -   ✅ Enable `APP_SET_DEVICE_INFO_PROVIDER` for the All Clusters Minimal
     example (#40)
 
+> **Note:** The Aliro door-lock delegate (#25) and All Clusters Minimal
+> `APP_SET_DEVICE_INFO_PROVIDER` (#40) are code contributions not covered by
+> this release's validated support matrix (lighting-app on TL521X only).
+
 ---
 
 ## 🐛 Bug Fixes
