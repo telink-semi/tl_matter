@@ -102,7 +102,7 @@ support.
 
 ---
 
-## Version Information
+## Version Information {#version-information}
 
 ### Matter SDK &amp; Toolchain
 
