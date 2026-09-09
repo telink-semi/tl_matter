@@ -1,7 +1,7 @@
 # Telink Matter SDK Release Note
 
 [![Version](https://img.shields.io/badge/Version-tl_v1.2.0--alpha--v1.5.1-blue?style=flat-square)](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.2.0-alpha-v1.5.1)
-[![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](../../../../LICENSE)
 [![Matter](https://img.shields.io/badge/Matter-v1.5-green?style=flat-square)](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391)
 
 ---
@@ -18,10 +18,10 @@
 
 ## 📖 Introduction
 
-This release is based on the latest commit of `dev-tlk_v1.5` branch, providing
-Matter protocol support for Telink RISC-V SoC platforms. It integrates the
-Matter SDK with the Telink Zephyr SDK to enable Matter-over-Thread devices on
-Telink chips including TL323X, TL521X, and TL721X.
+This release is based on commit `50cae34` from `pre_release-v1.2-v1.5-branch`,
+providing Matter protocol support for Telink RISC-V SoC platforms. It integrates
+the Matter SDK with the Telink Zephyr SDK to enable Matter-over-Thread devices
+on Telink chips including TL323X, TL521X, and TL721X.
 
 ---
 
@@ -153,6 +153,12 @@ support.
 | **Target Commit** | [50cae34](https://github.com/telink-semi/connectedhomeip/commit/50cae34e79ecbd5af5644eb60f6aa564f6c48ab4)        |
 | **Tag Name**      | [tl_v1.2.0-alpha-v1.5.1](https://github.com/telink-semi/connectedhomeip/releases/tag/tl_v1.2.0-alpha-v1.5.1)     |
 | **Release Type**  | Pre-Release (Alpha)                                                                                              |
+
+### Telink Zephyr SDK
+
+| Property   | Version                                                                                             |
+| ---------- | --------------------------------------------------------------------------------------------------- |
+| **Commit** | [8e3ccc0](https://github.com/telink-semi/tl_zephyr/commit/8e3ccc07900692fe5a9990cd517203de61b2eefc) |
 
 ### Chip &amp; Hardware Versions
 
