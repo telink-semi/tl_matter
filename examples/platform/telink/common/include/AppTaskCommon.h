@@ -65,7 +65,7 @@ public:
     void PowerOnFactoryReset(void);
 #endif /* CONFIG_CHIP_ENABLE_POWER_ON_FACTORY_RESET */
     CHIP_ERROR StartApp();
-    void PostEvent(AppEvent * event);
+    bool PostEvent(AppEvent * event);
 
     static bool sIsCommissioningFailed;
     static bool IsCommissioningFailed(void) { return sIsCommissioningFailed; }

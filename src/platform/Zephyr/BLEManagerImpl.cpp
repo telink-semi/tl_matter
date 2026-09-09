@@ -1006,6 +1006,7 @@ void BLEManagerImpl::HandleConnect(struct bt_conn * conId, uint8_t err)
     // Drop all callbacks incoming for the role other than peripheral, required by the Matter accessory
     VerifyOrExit(bt_info.role == BT_CONN_ROLE_PERIPHERAL, );
     // Don't handle BLE connecting events when it is not related to CHIPoBLE
+    VerifyOrExit(bt_info.id == kMatterBleIdentity, );
     VerifyOrExit(sInstance.mFlags.Has(Flags::kChipoBleGattServiceRegister), );
 
     event.Type                            = DeviceEventType::kPlatformZephyrBleConnected;
@@ -1036,6 +1037,7 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
     // Drop all callbacks incoming for the role other than peripheral, required by the Matter accessory
     VerifyOrExit(bt_info.role == BT_CONN_ROLE_PERIPHERAL, );
     // Don't handle BLE disconnecting events when it is not related to CHIPoBLE
+    VerifyOrExit(bt_info.id == kMatterBleIdentity, );
     VerifyOrExit(sInstance.mFlags.Has(Flags::kChipoBleGattServiceRegister), );
 
     event.Type                            = DeviceEventType::kPlatformZephyrBleDisconnected;

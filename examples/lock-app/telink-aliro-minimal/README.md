@@ -5,9 +5,9 @@ Aliro credential provisioning and NFC access on `tl3238x`. The application is
 commissioned over Matter BLE, operates on a Thread network, and uses a CLRC663
 NFC frontend for Aliro standard transactions.
 
-An initial Aliro BLE-only RKE build profile is also available for `tl7218x`.
-It is integration groundwork and has not yet completed Wallet transaction or
-BLE/Thread runtime validation.
+Aliro BLE-only standard RKE build profiles are also available for `tl7218x`.
+The legacy-advertising profile builds for TL7218X; Wallet transactions and
+BLE/Thread coexistence still require runtime validation.
 
 Matter owns the device lifecycle, BLE commissioning, Thread networking, and
 Matter persistence. The Aliro SDK is linked as a library and uses the same
@@ -131,8 +131,20 @@ You just need to checkout specific branch of Zephyr using current Matter revisio
       -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
     ```
 
-   For the initial TL7218X Aliro BLE-only profile, use the concurrent
-   BLE/Thread Zephyr and HAL revisions, then add `prj_ble.conf`:
+   For TL7218X BLE bring-up with a single advertiser, use the concurrent
+   BLE/Thread Zephyr and HAL revisions, then add `prj_ble_legacy.conf`:
+
+    ```bash
+    west build -p always -b tl7218x -d build-tl7218x-ble-legacy -- \
+      -DEXTRA_CONF_FILE=prj_ble_legacy.conf \
+      -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
+    ```
+
+   Use the local Aliro source checkout containing these transport changes;
+   the published SDK archive has not been updated by this change.
+
+   The separate-advertiser profile additionally requires a controller library
+   built for two peripheral connections and extended advertising:
 
     ```bash
     west build -p always -b tl7218x -- \
@@ -216,6 +228,19 @@ authenticated and its endpoint key belongs to an occupied Matter user.
 
 ### Aliro BLE bring-up profile
 
+Use `prj_ble_legacy.conf` while the controller's extended-advertising support
+is being resolved. It reserves one peripheral connection and uses Matter's
+BLE advertising arbiter to share the legacy advertiser. Matter commissioning
+has higher priority; after its advertising request is removed, Aliro advertises
+on identity 1 while Matter operates over Thread. Reopening BLE commissioning
+temporarily preempts Aliro advertising. Existing BLE connections must finish
+before the single connection slot can be reused. The arbiter resumes advertising
+when the connection object is released.
+
+Both BLE profiles disable bondable mode, keeping Matter on identity 0. Without
+this setting, Zephyr's Matter integration selects identity 1 and collides with
+Aliro. Matter's connection callbacks also filter by identity.
+
 The `prj_ble.conf` overlay keeps Matter BLE commissioning enabled and adds an
 Aliro BLE-only RKE peripheral to the same Zephyr Bluetooth host. Matter uses
 Bluetooth identity 0; Aliro creates identity 1 and a dedicated connectable
@@ -225,16 +250,46 @@ commissioning connection and an Aliro connection can coexist at host level.
 Aliro advertising starts after Matter provisions the Aliro reader
 configuration. The Aliro GATT service negotiates the protocol version before
 accepting its dynamic LE L2CAP channel, which carries the Aliro APDU exchange.
-BLE + UWB flow is not enabled.
+The initiation message supplies the exact A5 template used in authentication
+key derivation. The transport queues complete incoming messages, accepts SDUs
+up to 1028 bytes, waits for outgoing status completion before disconnecting,
+and isolates transactions across disconnects. The reader authenticates the
+provisioned endpoint key before processing the encrypted RKE lock/unlock request.
+The app reports BUSY while the action is queued and waits for the simulated
+actuator's final state. Fast transactions and BLE + UWB are disabled; step-up
+validation is outside this batch.
+
+The concurrent platform revisions used for build checks are Zephyr
+`1a8fc1a674eb50e233a66013aa8e3ee2148d7d65`, HAL
+`4e0ba44314a0da44bb76aac6953c969fd4a2eb7f`, and controller SDK
+`53eb98b32ea79ed7ab38f5daabde0a78a7880cd9`. The latter's
+`lib_zephyr_tl721x_concurrent.a` omits the extended-advertising implementation;
+its compiler definitions also select one peripheral connection. Use the legacy
+profile with this library. The separate-advertiser profile needs matching
+controller binaries and compiler definitions with those capabilities enabled.
+
+The legacy profile was compiled and linked with the revisions above. The Aliro
+native simulator suites pass 12 transport and advertising checks; see
+`tests/README.md` in the Aliro source checkout. These checks do not substitute
+for a phone transaction on hardware.
+
+On the board, first verify Matter commissioning and Aliro reader/endpoint
+provisioning. Then check for service UUID `FFF2`, GATT version negotiation,
+Initiate Access Protocol RKE, AUTH0/AUTH1, encrypted AP completion, encrypted RKE,
+and final reader status. Confirm both the phone result and the lock state over
+Thread. Repeat after disconnecting mid-transaction and after reopening a
+commissioning window. Apple Home/Wallet BLE interoperability is not yet validated.
 
 ## Current limitations
 
 - The default and validated profile is Aliro NFC standard transaction on
-  TL3238X. The TL7218X BLE-only profile is an initial compile/integration target;
+  TL3238X. The TL7218X legacy BLE-only profile has passed a firmware build;
   Aliro Wallet BLE transactions have not yet been validated.
-- BLE advertising still uses temporary expiry and group-resolving-key inputs.
-  These must be sourced from the provisioned Aliro state and current time before
-  interoperability testing.
+- BLE advertising uses the Aliro no-UTC expiry value `0xFFFFFFFF` and the
+  controller-reported transmit power. The group resolving key is still a
+  development placeholder. Reader discovery by a phone that filters on its
+  provisioned GRK remains unresolved; the BLE-only Matter feature configuration
+  does not enable the BLE+UWB feature that provisions that key.
 - The BLE profile depends on Telink's concurrent BLE/Thread Zephyr branch and
   matching HAL/controller library. Matter commissioning plus Aliro BLE runtime
   coexistence is not yet proven by this application.

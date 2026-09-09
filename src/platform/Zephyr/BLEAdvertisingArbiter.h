@@ -59,6 +59,8 @@ struct Request : public sys_snode_t
     Span<const bt_data> scanResponseData; ///< Scan response data fields
     OnAdvertisingStarted onStarted;       ///< (Optional) Callback invoked when the request becomes top-priority.
     OnAdvertisingStopped onStopped;       ///< (Optional) Callback invoked when the request stops being top-priority.
+    uint8_t identity = BT_ID_DEFAULT;      ///< Used only when useIdentity is true; otherwise use the identity passed to Init().
+    bool useIdentity = false;
 };
 
 /**
@@ -67,7 +69,7 @@ struct Request : public sys_snode_t
  * @note This method must be called before trying to insert or cancel any requests.
  *
  * @param btId   Local Bluetooth LE identifier to be used for the advertising parameters. Currently Bluetooth LE identifier used in
- * this method will be used for all advertising requests and changing it dynamically is not supported.
+ * this method is the default for requests that do not set useIdentity.
  * @return error    If the module is already initialized.
  * @return success  Otherwise.
  */

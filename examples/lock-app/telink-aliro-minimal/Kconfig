@@ -37,7 +37,6 @@ config ALIRO_TRANSPORT_BLE
     select BT_HOST_CRYPTO
     select BT_SMP
     select BT_L2CAP_DYNAMIC_CHANNEL
-    select BT_EXT_ADV
 
 config ALIRO_ONLY_BLE_FLOW_SUPP
     bool

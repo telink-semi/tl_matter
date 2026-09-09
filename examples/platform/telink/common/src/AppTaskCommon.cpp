@@ -869,14 +869,18 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
     }
 }
 
-void AppTaskCommon::PostEvent(AppEvent * aEvent)
+bool AppTaskCommon::PostEvent(AppEvent * aEvent)
 {
     if (!aEvent)
-        return;
+    {
+        return false;
+    }
     if (k_msgq_put(&sAppEventQueue, aEvent, K_NO_WAIT) != 0)
     {
         LOG_INF("PostEvent fail");
+        return false;
     }
+    return true;
 }
 
 void AppTaskCommon::DispatchEvent(AppEvent * aEvent)

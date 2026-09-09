@@ -40,6 +40,10 @@ if(NOT CONFIG_ALIRO_TRANSPORT_NFC AND NOT CONFIG_ALIRO_TRANSPORT_BLE)
   message(FATAL_ERROR "Enable at least one Aliro transport")
 endif()
 
+if(CONFIG_ALIRO_TRANSPORT_BLE AND CONFIG_BT_BONDABLE)
+  message(FATAL_ERROR "Aliro reserves Bluetooth identity 1; set CONFIG_BT_BONDABLE=n to keep Matter on identity 0")
+endif()
+
 if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
   if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
     FetchContent_Declare(telink_aliro

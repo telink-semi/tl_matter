@@ -73,7 +73,7 @@ CHIP_ERROR RestartAdvertising()
 
     const Request & top    = ToRequest(sys_slist_peek_head(&sRequests));
     bt_le_adv_param params = BT_LE_ADV_PARAM_INIT(top.options, top.minInterval, top.maxInterval, nullptr);
-    params.id              = sBtId;
+    params.id              = top.useIdentity ? top.identity : sBtId;
     const int result = bt_le_adv_start(&params, top.advertisingData.data(), top.advertisingData.size(), top.scanResponseData.data(),
                                        top.scanResponseData.size());
 
