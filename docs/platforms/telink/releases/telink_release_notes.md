@@ -14,8 +14,10 @@
 
 ## 📖 Introduction
 
-This release is based on the `dev-tlk_v1.5` branch, providing Matter protocol support for the Telink TL521X SoC platform.
-It integrates the Matter SDK with the Telink Zephyr SDK to enable a Matter-over-Thread device on TL521X (A0) with the lighting-app.
+This release is based on the `dev-tlk_v1.5` branch, providing Matter protocol
+support for the Telink TL521X SoC platform. It integrates the Matter SDK with
+the Telink Zephyr SDK to enable a Matter-over-Thread device on TL521X (A0) with
+the lighting-app.
 
 ---
 
@@ -111,8 +113,8 @@ support.
 | Property          | Version                                                                                              |
 | ----------------- | ---------------------------------------------------------------------------------------------------- |
 | **Target Commit** | [eec1e19d](https://github.com/telink-semi/tl_matter/commit/eec1e19d1f1d537c322e0c4f9599cde5c96e1409) |
-| **Tag Name**      | [tl_v1.4.0-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-v1.5)     |
-| **Release Type**  | Release                                                                                   |
+| **Tag Name**      | [tl_v1.4.0-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.4.0-v1.5)               |
+| **Release Type**  | Release                                                                                              |
 
 ### Telink Zephyr SDK
 
