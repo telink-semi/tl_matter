@@ -41,23 +41,27 @@ Matter-over-Thread device on TL521X (A0) with the lighting-app.
 -   ✅ LZMA compression support for OTA images
 -   ✅ Factory data provisioning support
 -   ✅ Matter + Zigbee dual-mode support on 4MB flash
--   ✅ Add Aliro (Apple Home) delegate for the door lock example (#25)
+-   ✅ Add Aliro (Apple Home) delegate for the door lock example
+    ([#25](https://github.com/telink-semi/tl_matter/pull/25))
 -   ✅ Enable `APP_SET_DEVICE_INFO_PROVIDER` for the All Clusters Minimal
-    example (#40)
+    example ([#40](https://github.com/telink-semi/tl_matter/pull/40))
 
-> **Note:** The Aliro door-lock delegate (#25) and All Clusters Minimal
-> `APP_SET_DEVICE_INFO_PROVIDER` (#40) are code contributions not covered by
-> this release's validated support matrix (lighting-app on TL521X only).
+> **Note:** The Aliro door-lock delegate
+> ([#25](https://github.com/telink-semi/tl_matter/pull/25)) and All Clusters
+> Minimal `APP_SET_DEVICE_INFO_PROVIDER`
+> ([#40](https://github.com/telink-semi/tl_matter/pull/40)) are code
+> contributions not covered by this release's validated support matrix
+> (lighting-app on TL521X only).
 
 ---
 
 ## 🐛 Bug Fixes
 
-| Issue | Component | Description                                                                                                                                                      |
-| ----- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| #40   | Build     | Compile `DFUOverSMP.cpp` in the common chip-module so examples using `AppTaskCommon.cpp` link DFU-over-SMP support (fixes `air-quality-sensor-app` link failure) |
-| #47   | Build/OTA | Use `SOC_FAMILY_TELINK_TLX` instead of the removed `SOC_RISCV_TELINK_TLX` so the MCUboot build target is not skipped on TLX-family OTA builds                    |
-| #51   | SoC       | Update the `tl_zephyr` revision to add the TL521X radio reset at boot for the Zigbee→Matter switch (Zephyr #836)                                                 |
+| Issue                                                   | Component | Description                                                                                                                                                           |
+| ------------------------------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#40](https://github.com/telink-semi/tl_matter/pull/40) | Build     | Compile `DFUOverSMP.cpp` in the common chip-module so examples using `AppTaskCommon.cpp` link DFU-over-SMP support (fixes `air-quality-sensor-app` link failure)      |
+| [#47](https://github.com/telink-semi/tl_matter/pull/47) | Build/OTA | Use `SOC_FAMILY_TELINK_TLX` instead of the removed `SOC_RISCV_TELINK_TLX` so the MCUboot build target is not skipped on TLX-family OTA builds                         |
+| [#51](https://github.com/telink-semi/tl_matter/pull/51) | SoC       | Update the `tl_zephyr` revision to add the TL521X radio reset at boot for the Zigbee→Matter switch (Zephyr [#836](https://github.com/telink-semi/tl_zephyr/pull/836)) |
 
 ---
 
