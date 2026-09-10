@@ -8,5 +8,13 @@
     "bracketSpacing": true,
     "jsxBracketSameLine": false,
     "arrowParens": "avoid",
-    "proseWrap": "preserve"
+    "proseWrap": "always",
+    "overrides": [
+        {
+            "files": ["*_cn.md", "**/*_cn.md"],
+            "options": {
+                "proseWrap": "preserve"
+            }
+        }
+    ]
 }
