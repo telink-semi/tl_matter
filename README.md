@@ -31,7 +31,7 @@ Connected Home over IP (CHIP) project**
 Telink Matter SDK is a software development platform that implements the Matter
 protocol on Telink RISC-V SoC platforms. It is built on top of the Connected
 Home over IP (CHIP) project and integrates with the Telink Zephyr SDK to provide
-complete Matter-over-Thread support for Telink chips.
+complete Matter over Thread support for Telink chips.
 
 ### SDK Core Capabilities
 
