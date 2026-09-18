@@ -37,6 +37,8 @@ config ALIRO_TRANSPORT_BLE
     select BT_HOST_CRYPTO
     select BT_SMP
     select BT_L2CAP_DYNAMIC_CHANNEL
+    # Bluetooth enables PSA crypto; Matter's CSR signing uses deterministic ECDSA.
+    select PSA_WANT_ALG_DETERMINISTIC_ECDSA
 
 config ALIRO_ONLY_BLE_FLOW_SUPP
     bool
@@ -47,6 +49,17 @@ config ALIRO_BLE_UWB_FLOW_SUPP
     bool
     default n
     depends on ALIRO_TRANSPORT_BLE
+
+config ALIRO_CSA_TEST_CREDENTIALS
+    bool "Lab only: preload the CSA BLE RKE test credentials"
+    depends on ALIRO_TRANSPORT_BLE
+    default n
+    help
+      Preload the public CSA Test Tool demo reader identity and group
+      identifiers, and authorize the matching demo endpoint. This makes the
+      BLE-only FFF2 advertiser available without a separate chip-tool Aliro
+      provisioning step. The fixed private key and endpoint authorization
+      bypass are suitable only for controlled interoperability testing.
 
 config ALIRO_BT_POLLER_THREAD_STACK_SIZE
     int "Aliro BLE transaction thread stack size"

@@ -776,11 +776,15 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
     case DeviceEventType::kCHIPoBLEConnectionClosed:
 #if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
         if (chip::Server::GetInstance().GetFailSafeContext().IsFailSafeArmed())
-#else
-        if (ConnectivityMgr().GetBleLayer()->IsInitialized())
-#endif
         {
             // Unexpected BLE disconnect during commissioning
+            ChipLogDetail(DeviceLayer, "BLE disconnected during commissioning");
+            chip::Server::GetInstance().GetFailSafeContext().ForceFailSafeTimerExpiry();
+        }
+        // Keep the controller running for BLE/Thread coexistence and application BLE services.
+#else
+        if (ConnectivityMgr().GetBleLayer()->IsInitialized())
+        {
             ChipLogDetail(DeviceLayer, "BLE disconnected during commissioning");
             chip::Server::GetInstance().GetFailSafeContext().ForceFailSafeTimerExpiry();
         }
@@ -805,6 +809,7 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
             }
 #endif
         }
+#endif // CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
         break;
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     case DeviceEventType::kDnssdInitialized:

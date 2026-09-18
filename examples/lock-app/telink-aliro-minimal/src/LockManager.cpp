@@ -23,6 +23,8 @@
 #include <app/clusters/door-lock-server/door-lock-server.h>
 #include <cstring>
 #include <lib/support/logging/CHIPLogging.h>
+#include <platform/CHIPDeviceLayer.h>
+#include <system/SystemClock.h>
 
 LOG_MODULE_DECLARE(app, CONFIG_CHIP_APP_LOG_LEVEL);
 
@@ -37,8 +39,6 @@ CHIP_ERROR LockManager::Init(DataModel::Nullable<DlLockState> state, StateChange
     mStateChangeCallback = callback;
     mState               = !state.IsNull() && state.Value() == DlLockState::kLocked ? kState_LockCompleted : kState_UnlockCompleted;
 
-    k_timer_init(&mActuatorTimer, &LockManager::ActuatorTimerEventHandler, nullptr);
-    k_timer_user_data_set(&mActuatorTimer, this);
     return CHIP_NO_ERROR;
 }
 
@@ -100,22 +100,32 @@ bool LockManager::StartAction(Action_t action, OperationSource source, EndpointI
     {
         mStateChangeCallback(mState);
     }
-    k_timer_start(&mActuatorTimer, K_MSEC(LOCK_MANAGER_ACTUATOR_MOVEMENT_TIME_MS), K_NO_WAIT);
+    // All callers that manipulate the Matter Door Lock state are dispatched to
+    // the Matter event loop. Complete the simulated actuator operation there as
+    // well; the former Zephyr timer -> AppEvent path crossed back to the main
+    // thread and invoked a reference-taking handler through an incompatible
+    // function-pointer type.
+    DeviceLayer::SystemLayer().CancelTimer(ActuatorTimerEventHandler, this);
+    CHIP_ERROR timerError = DeviceLayer::SystemLayer().StartTimer(
+        System::Clock::Milliseconds32(LOCK_MANAGER_ACTUATOR_MOVEMENT_TIME_MS), ActuatorTimerEventHandler, this);
+    if (timerError != CHIP_NO_ERROR)
+    {
+        ChipLogError(AppServer, "Failed to start lock actuator completion timer: %" CHIP_ERROR_FORMAT, timerError.Format());
+        mState = kState_NotFulyLocked;
+        if (mStateChangeCallback != nullptr)
+        {
+            mStateChangeCallback(mState);
+        }
+        return false;
+    }
     return true;
 }
 
-void LockManager::ActuatorTimerEventHandler(k_timer * timer)
+void LockManager::ActuatorTimerEventHandler(System::Layer * layer, void * context)
 {
-    AppEvent event;
-    event.Type               = AppEvent::kEventType_Timer;
-    event.TimerEvent.Context = k_timer_user_data_get(timer);
-    event.Handler            = reinterpret_cast<EventHandler>(LockManager::ActuatorAppEventHandler);
-    GetAppTask().PostEvent(&event);
-}
+    (void) layer;
 
-void LockManager::ActuatorAppEventHandler(const AppEvent & event)
-{
-    auto * lock = static_cast<LockManager *>(event.TimerEvent.Context);
+    auto * lock = static_cast<LockManager *>(context);
     if (lock == nullptr)
     {
         return;

@@ -46,6 +46,38 @@ namespace {
 constexpr atomic_val_t kNoPendingAliroAction = -1;
 atomic_t sPendingAliroState                 = kNoPendingAliroAction;
 
+void ApplyAliroLockState(intptr_t argument)
+{
+    const auto state = static_cast<telink_aliro_lock_state>(argument);
+    LockManager::Action_t action;
+
+    switch (state)
+    {
+    case TELINK_ALIRO_LOCK_STATE_SECURED:
+        action = LockManager::LOCK_ACTION;
+        break;
+    case TELINK_ALIRO_LOCK_STATE_UNSECURED:
+        action = LockManager::UNLOCK_ACTION;
+        break;
+    default:
+        LOG_ERR("Invalid scheduled Aliro lock state: %u", static_cast<unsigned>(state));
+        atomic_set(&sPendingAliroState, kNoPendingAliroAction);
+        return;
+    }
+
+    LOG_INF("Applying authenticated Aliro RKE action on Matter thread: %s",
+            state == TELINK_ALIRO_LOCK_STATE_SECURED ? "SECURED" : "UNSECURED");
+    if (!LockMgr().LockAction(AppEvent::kEventType_DeviceAction, action, LockManager::OperationSource::kAliro,
+                              kExampleEndpointId))
+    {
+        LOG_ERR("Aliro lock action failed");
+    }
+
+    // LockManager now exposes the initiated/completed state, or the existing
+    // state if it rejected the request. Release the temporary queue state.
+    atomic_set(&sPendingAliroState, kNoPendingAliroAction);
+}
+
 #if CONFIG_ALIRO_TRANSPORT_BLE && !CONFIG_BT_EXT_ADV
 uint8_t sAliroServiceData[26];
 constexpr uint8_t kAliroAdvertisingFlags[] = { BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR };
@@ -53,6 +85,13 @@ const bt_data kAliroAdvertisingData[] = {
     BT_DATA(BT_DATA_FLAGS, kAliroAdvertisingFlags, sizeof(kAliroAdvertisingFlags)),
     BT_DATA(BT_DATA_SVC_DATA16, sAliroServiceData, sizeof(sAliroServiceData)),
 };
+// The primary packet already occupies all 31 bytes. Publish the service UUID
+// separately for centrals that scan by service UUID rather than service data.
+const bt_data kAliroScanResponseData[] = {
+    BT_DATA(BT_DATA_UUID16_SOME, sAliroServiceData, 2),
+    BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+};
+static_assert(4 + 2 + sizeof(CONFIG_BT_DEVICE_NAME) - 1 <= 31, "Aliro scan response exceeds the 31-byte limit");
 BLEAdvertisingArbiter::Request sAliroAdvertisingRequest = {};
 
 // The SDK invokes these callbacks from Set/ClearAliroReaderConfig, on the
@@ -69,16 +108,17 @@ int StartAliroAdvertising(uint8_t identity, const uint8_t * serviceData, size_t 
     sAliroAdvertisingRequest.minInterval     = BT_GAP_ADV_FAST_INT_MIN_2;
     sAliroAdvertisingRequest.maxInterval     = BT_GAP_ADV_FAST_INT_MAX_2;
     sAliroAdvertisingRequest.advertisingData = Span<const bt_data>(kAliroAdvertisingData);
+    sAliroAdvertisingRequest.scanResponseData = Span<const bt_data>(kAliroScanResponseData);
     sAliroAdvertisingRequest.identity        = identity;
     sAliroAdvertisingRequest.useIdentity     = true;
     sAliroAdvertisingRequest.onStarted      = [](int result) {
         if (result == 0)
         {
-            LOG_INF("Aliro legacy BLE advertising started");
+            LOG_INF("Aliro BLE advertising started");
         }
         else if (result != -ENOMEM)
         {
-            LOG_ERR("Aliro legacy BLE advertising failed: %d", result);
+            LOG_ERR("Aliro BLE advertising request failed: %d", result);
         }
     };
     CHIP_ERROR err = BLEAdvertisingArbiter::InsertRequest(sAliroAdvertisingRequest);
@@ -157,6 +197,10 @@ CHIP_ERROR AppTask::Init(void)
         LOG_ERR("Aliro BLE initialization failed");
         return CHIP_ERROR_INTERNAL;
     }
+#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+    ReturnErrorOnFailure(AliroDelegate::GetInstance().InitializeCsaTestCredentials());
+    LOG_WRN("CSA Aliro test credentials preloaded; FFF2 advertising will start after Matter commissioning");
+#endif
 #endif
 
     return CHIP_NO_ERROR;
@@ -216,12 +260,12 @@ int AppTask::RequestAliroLockState(enum telink_aliro_lock_state state, void * co
         return -EBUSY;
     }
 
-    AppEvent event           = {};
-    event.Type               = AppEvent::kEventType_DeviceAction;
-    event.DeviceEvent.Action = static_cast<uint8_t>(state);
-    event.Handler            = AliroLockActionEventHandler;
-    if (!GetAppTask().PostEvent(&event))
+    // DoorLockServer::SetLockState emits Matter events. Run it on the Matter
+    // event-loop thread instead of the application main thread.
+    const CHIP_ERROR err = chip::DeviceLayer::PlatformMgr().ScheduleWork(ApplyAliroLockState, static_cast<intptr_t>(state));
+    if (err != CHIP_NO_ERROR)
     {
+        LOG_ERR("Failed to schedule Aliro lock action: %" CHIP_ERROR_FORMAT, err.Format());
         atomic_set(&sPendingAliroState, kNoPendingAliroAction);
         return -ENOBUFS;
     }
@@ -236,6 +280,14 @@ int AppTask::AuthorizeAliroEndpoint(const uint8_t * publicKey, size_t publicKeyS
     {
         return -EINVAL;
     }
+
+#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+    if (AliroDelegate::GetInstance().IsCsaTestEndpointKey(chip::ByteSpan(publicKey, publicKeySize)))
+    {
+        LOG_WRN("CSA test endpoint accepted by test-credential authorization bypass");
+        return 0;
+    }
+#endif
 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     const bool authorized = LockMgr().ValidateAliroEndpointKey(chip::ByteSpan(publicKey, publicKeySize));
@@ -252,26 +304,8 @@ void AppTask::AliroLockActionEventHandler(AppEvent * event)
         return;
     }
 
-    LockManager::Action_t action;
-    switch (event->DeviceEvent.Action)
-    {
-    case TELINK_ALIRO_LOCK_STATE_SECURED:
-        action = LockManager::LOCK_ACTION;
-        break;
-    case TELINK_ALIRO_LOCK_STATE_UNSECURED:
-        action = LockManager::UNLOCK_ACTION;
-        break;
-    default:
-        return;
-    }
-
-    if (!LockMgr().LockAction(AppEvent::kEventType_DeviceAction, action, LockManager::OperationSource::kAliro, kExampleEndpointId))
-    {
-        LOG_ERR("Aliro lock action failed");
-    }
-    // LockManager now exposes the initiated/completed state, or the existing
-    // state if it rejected the request. Release the temporary queue state.
-    atomic_set(&sPendingAliroState, kNoPendingAliroAction);
+    // Retained for compatibility with previously queued application events.
+    ApplyAliroLockState(event->DeviceEvent.Action);
 }
 
 /* This is a button handler only */

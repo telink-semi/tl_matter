@@ -5,9 +5,10 @@ Aliro credential provisioning and NFC access on `tl3238x`. The application is
 commissioned over Matter BLE, operates on a Thread network, and uses a CLRC663
 NFC frontend for Aliro standard transactions.
 
-Aliro BLE-only standard RKE build profiles are also available for `tl7218x`.
-The legacy-advertising profile builds for TL7218X; Wallet transactions and
-BLE/Thread coexistence still require runtime validation.
+The application has two transport configurations: the default `prj.conf` for
+Aliro NFC on `tl3238x`, and `prj_ble.conf` for Aliro BLE on `tl7218x`. The BLE
+configuration has completed an authenticated RKE transaction with the CSA
+Aliro Test Tool while Matter remained operational over Thread.
 
 Matter owns the device lifecycle, BLE commissioning, Thread networking, and
 Matter persistence. The Aliro SDK is linked as a library and uses the same
@@ -19,13 +20,13 @@ stack.
 | Board/SoC | Build target | NFC frontend | Zephyr Board Info |
 | :-------- | :----------- | :----------- | :---------------- |
 | TL3238X | `tl3238x` | CLRC663 | [TL3238X](https://github.com/telink-semi/zephyr/tree/telink_aliro_baza_zephyr_4.1.0/boards/telink/tl323x) |
-| TL7218X | `tl7218x` | Not used by BLE profile | [TL7218X](https://github.com/telink-semi/zephyr/tree/feat-concurrent/boards/telink/tl721x) |
+| TL7218X | `tl7218x` | Not used by BLE transport | [TL7218X](https://github.com/telink-semi/zephyr/tree/pre_release-v1.2-v4.1-branch/boards/telink/tl721x) |
 
 This application has been tested with Telink Zephyr revision
 `69f4e4ebf0f607c1808e6f5ff7e91c6f6c531a29`, Telink HAL revision
 `ce77c8f74d7e99a75d755dd4c3b43c859cb00b1b`, and Zephyr SDK 0.17.0.
 These revisions describe the validated TL3238X NFC configuration. The TL7218X
-BLE profile requires Telink's concurrent BLE/Thread Zephyr branch and its
+BLE configuration requires Telink's concurrent BLE/Thread Zephyr branch and its
 matching HAL revision.
 
 ## Implemented functionality
@@ -106,55 +107,31 @@ You just need to checkout specific branch of Zephyr using current Matter revisio
     source scripts/activate.sh -p all,telink
     ```
 
-3. Build the application from `examples/lock-app/telink-aliro-minimal`:
+3. Build the application from the connectedhomeip root.
+
+   Aliro NFC transport on TL3238X uses the default configuration:
 
     ```bash
-    west build -p always -b tl3238x
+    west build -p always -b tl3238x -d build-tl3238x-nfc examples/lock-app/telink-aliro-minimal
     ```
 
-   CMake downloads the Aliro SDK archive configured by
-   `TELINK_ALIRO_SDK_URL`, extracts it under `build/_deps`, and links the
-   `Telink::Aliro` target. The resulting image is `build/zephyr/merged.bin`.
-
-   In case you want to use another published SDK archive:
+   Aliro BLE transport on TL7218X uses `prj_ble.conf` and the matching Telink
+   concurrent BLE/Thread Zephyr, HAL, and controller revisions. Until the
+   BLE-capable Aliro SDK is published as `latest`, point the build at the local
+   Aliro source checkout:
 
     ```bash
-    west build -p always -b tl3238x -- \
-      -DTELINK_ALIRO_SDK_URL=https://server/path/telink-aliro-sdk.tar.gz
+    west build -p always -b tl7218x -d build-tl7218x-ble examples/lock-app/telink-aliro-minimal -- -DEXTRA_CONF_FILE=prj_ble.conf -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
     ```
 
-   To build against a local Aliro source or SDK checkout without downloading an
-   archive:
+   The BLE configuration includes the public CSA Test Tool credentials used by
+   this Stage 2 release. After publishing the updated SDK archive, the
+   `FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO` option can be omitted and CMake will
+   download the configured `latest` archive automatically.
 
-    ```bash
-    west build -p always -b tl3238x -- \
-      -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
-    ```
-
-   For TL7218X BLE bring-up with a single advertiser, use the concurrent
-   BLE/Thread Zephyr and HAL revisions, then add `prj_ble_legacy.conf`:
-
-    ```bash
-    west build -p always -b tl7218x -d build-tl7218x-ble-legacy -- \
-      -DEXTRA_CONF_FILE=prj_ble_legacy.conf \
-      -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
-    ```
-
-   Use the local Aliro source checkout containing these transport changes;
-   the published SDK archive has not been updated by this change.
-
-   The separate-advertiser profile additionally requires a controller library
-   built for two peripheral connections and extended advertising:
-
-    ```bash
-    west build -p always -b tl7218x -- \
-      -DEXTRA_CONF_FILE=prj_ble.conf \
-      -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
-    ```
-
-4. Flash the generated `merged.bin` using the TL3238X flashing procedure. The
-   current TL3238X Zephyr board documentation does not enable a `west flash`
-   runner.
+4. Flash the generated `<build-directory>/zephyr/merged.bin` using the normal
+   procedure for the selected Telink board. The current board definitions do
+   not enable a `west flash` runner.
 
 ## Hardware connections
 
@@ -226,73 +203,50 @@ After provisioning, present the matching NFC credential to the CLRC663 reader.
 The application accepts the requested lock action only when the transaction is
 authenticated and its endpoint key belongs to an occupied Matter user.
 
-### Aliro BLE bring-up profile
+### Aliro BLE-only transaction
 
-Use `prj_ble_legacy.conf` while the controller's extended-advertising support
-is being resolved. It reserves one peripheral connection and uses Matter's
-BLE advertising arbiter to share the legacy advertiser. Matter commissioning
-has higher priority; after its advertising request is removed, Aliro advertises
-on identity 1 while Matter operates over Thread. Reopening BLE commissioning
-temporarily preempts Aliro advertising. Existing BLE connections must finish
-before the single connection slot can be reused. The arbiter resumes advertising
-when the connection object is released.
+From the connectedhomeip root, build the TL7218X BLE transport configuration
+against the BLE-capable Aliro source checkout:
 
-Both BLE profiles disable bondable mode, keeping Matter on identity 0. Without
-this setting, Zephyr's Matter integration selects identity 1 and collides with
-Aliro. Matter's connection callbacks also filter by identity.
+```bash
+west build -p always -b tl7218x -d build-tl7218x-ble examples/lock-app/telink-aliro-minimal -- -DEXTRA_CONF_FILE=prj_ble.conf -DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/absolute/path/to/aliro
+```
 
-The `prj_ble.conf` overlay keeps Matter BLE commissioning enabled and adds an
-Aliro BLE-only RKE peripheral to the same Zephyr Bluetooth host. Matter uses
-Bluetooth identity 0; Aliro creates identity 1 and a dedicated connectable
-extended advertising set. The profile reserves two BLE connections so a Matter
-commissioning connection and an Aliro connection can coexist at host level.
+Flash `build-tl7218x-ble/zephyr/merged.bin`, then:
 
-Aliro advertising starts after Matter provisions the Aliro reader
-configuration. The Aliro GATT service negotiates the protocol version before
-accepting its dynamic LE L2CAP channel, which carries the Aliro APDU exchange.
-The initiation message supplies the exact A5 template used in authentication
-key derivation. The transport queues complete incoming messages, accepts SDUs
-up to 1028 bytes, waits for outgoing status completion before disconnecting,
-and isolates transactions across disconnects. The reader authenticates the
-provisioned endpoint key before processing the encrypted RKE lock/unlock request.
-The app reports BUSY while the action is queued and waits for the simulated
-actuator's final state. Fast transactions and BLE + UWB are disabled; step-up
-validation is outside this batch.
+1. Commission the lock with CHIP Tool and wait for the Matter commissioning
+   window to close.
+2. Confirm that the lock advertises the Aliro service UUID `FFF2`.
+3. In the CSA Aliro Test Tool, run `BLERKE_RDR_UNSECURE`.
+4. Confirm GATT negotiation, L2CAP connection, initiation ID `6`, AUTH0/AUTH1,
+   AP completion, the encrypted RKE request, and the final Reader Status
+   Changed message in the device log.
 
-The concurrent platform revisions used for build checks are Zephyr
-`1a8fc1a674eb50e233a66013aa8e3ee2148d7d65`, HAL
-`4e0ba44314a0da44bb76aac6953c969fd4a2eb7f`, and controller SDK
-`53eb98b32ea79ed7ab38f5daabde0a78a7880cd9`. The latter's
-`lib_zephyr_tl721x_concurrent.a` omits the extended-advertising implementation;
-its compiler definitions also select one peripheral connection. Use the legacy
-profile with this library. The separate-advertiser profile needs matching
-controller binaries and compiler definitions with those capabilities enabled.
+The BLE configuration preloads the public demo reader credentials and accepts
+the matching demo endpoint key without a Matter credential lookup. This is for
+controlled interoperability testing only.
 
-The legacy profile was compiled and linked with the revisions above. The Aliro
-native simulator suites pass 12 transport and advertising checks; see
-`tests/README.md` in the Aliro source checkout. These checks do not substitute
-for a phone transaction on hardware.
+After Matter commissioning, Aliro advertises on Bluetooth identity 1 while
+Matter continues over Thread. The BLE transaction performs one authenticated
+lock action and then disconnects; repeated actions from a looping test harness
+create repeated connections.
 
-On the board, first verify Matter commissioning and Aliro reader/endpoint
-provisioning. Then check for service UUID `FFF2`, GATT version negotiation,
-Initiate Access Protocol RKE, AUTH0/AUTH1, encrypted AP completion, encrypted RKE,
-and final reader status. Confirm both the phone result and the lock state over
-Thread. Repeat after disconnecting mid-transaction and after reopening a
-commissioning window. Apple Home/Wallet BLE interoperability is not yet validated.
+The tested concurrent platform revisions are Zephyr
+`ccc4b4178e4a4e3e7f473715e65bfe2f60c44116`, HAL
+`bdf0d7927d31809340610b5e1575667e2d862110`, and controller SDK
+`53eb98b32ea79ed7ab38f5daabde0a78a7880cd9`.
 
 ## Current limitations
 
-- The default and validated profile is Aliro NFC standard transaction on
-  TL3238X. The TL7218X legacy BLE-only profile has passed a firmware build;
-  Aliro Wallet BLE transactions have not yet been validated.
+- Aliro NFC standard transactions are validated on TL3238X. On TL7218X, the
+  BLE transport configuration has completed authenticated RKE with the CSA
+  Test Tool while Matter remained operational over Thread.
 - BLE advertising uses the Aliro no-UTC expiry value `0xFFFFFFFF` and the
-  controller-reported transmit power. The group resolving key is still a
-  development placeholder. Reader discovery by a phone that filters on its
-  provisioned GRK remains unresolved; the BLE-only Matter feature configuration
-  does not enable the BLE+UWB feature that provisions that key.
-- The BLE profile depends on Telink's concurrent BLE/Thread Zephyr branch and
-  matching HAL/controller library. Matter commissioning plus Aliro BLE runtime
-  coexistence is not yet proven by this application.
+  controller-reported transmit power. A provisioned group resolving key is
+  forwarded to dynamic-tag generation; without one, the development zero-key
+  tag is used and cannot match a client using another key.
+- The BLE configuration depends on the matching Telink concurrent BLE/Thread Zephyr,
+  HAL, and controller revisions.
 - Aliro BLE + UWB, expedited transactions, and keyslot credentials are not
   included.
 - Aliro issuer keys, endpoint keys, and reader configuration are stored in RAM
@@ -311,6 +265,6 @@ non-retained instruction RAM as separate linker regions. The Aliro NFC thread
 currently uses a provisional 4 KiB stack; runtime stack and heap high-water
 measurements are still required.
 
-The default SDK URL currently identifies a test archive and is not accompanied
-by a content hash. A public release should use an immutable, versioned archive
-name and pin its contents before this build is treated as reproducible.
+The default SDK URL uses a rolling `latest` archive. For a reproducible release,
+replace it with the immutable versioned SDK URL and pin the archive hash after
+publishing the matching Aliro SDK artifact.

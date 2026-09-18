@@ -44,6 +44,13 @@ if(CONFIG_ALIRO_TRANSPORT_BLE AND CONFIG_BT_BONDABLE)
   message(FATAL_ERROR "Aliro reserves Bluetooth identity 1; set CONFIG_BT_BONDABLE=n to keep Matter on identity 0")
 endif()
 
+if(CONFIG_ALIRO_TRANSPORT_BLE AND CONFIG_SOC_RISCV_TELINK_TLX AND NOT CONFIG_IEEE802154_TLX_BLE_COEXIST)
+  message(FATAL_ERROR
+    "Aliro BLE requires CONFIG_IEEE802154_TLX_BLE_COEXIST=y and the matching concurrent controller. "
+    "Use EXTRA_CONF_FILE=prj_ble.conf."
+  )
+endif()
+
 if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
   if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
     FetchContent_Declare(telink_aliro

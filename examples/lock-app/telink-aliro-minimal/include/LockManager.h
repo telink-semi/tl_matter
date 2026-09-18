@@ -108,13 +108,11 @@ private:
     bool StartAction(Action_t action, OperationSource source, chip::EndpointId endpointId,
                      const chip::app::DataModel::Nullable<chip::FabricIndex> & fabricIdx,
                      const chip::app::DataModel::Nullable<chip::NodeId> & nodeId);
-    static void ActuatorTimerEventHandler(k_timer * timer);
-    static void ActuatorAppEventHandler(const AppEvent & event);
+    static void ActuatorTimerEventHandler(chip::System::Layer * layer, void * context);
 
     static LockManager sLock;
     State_t mState                                             = kState_NotFulyLocked;
     StateChangeCallback mStateChangeCallback                   = nullptr;
-    k_timer mActuatorTimer                                     = {};
     UserSlot mUsers[APP_MAX_USERS]                             = {};
     PinCredentialSlot mPinCredentials[APP_MAX_PIN_CREDENTIALS] = {};
 };

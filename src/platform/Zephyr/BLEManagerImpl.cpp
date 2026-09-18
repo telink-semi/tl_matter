@@ -65,6 +65,9 @@ extern "C" {
 extern __attribute__((noinline)) int b9x_bt_blc_mac_init(uint8_t * bt_mac);
 #elif defined(CONFIG_BT_TLX)
 extern __attribute__((noinline)) int tlx_bt_blc_mac_init(uint8_t * bt_mac);
+#if defined(CONFIG_IEEE802154_TLX_BLE_COEXIST)
+extern __attribute__((noinline)) void tlx_bt_802154_dual_mode_start(void);
+#endif
 #elif defined(CONFIG_BT_W91)
 extern __attribute__((noinline)) void telink_bt_blc_mac_init(uint8_t * bt_mac);
 #endif
@@ -245,6 +248,20 @@ CHIP_ERROR BLEManagerImpl::_Init()
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 #endif
 #endif // CONFIG_BT_BONDABLE
+
+#if defined(CONFIG_BT_TLX) && defined(CONFIG_IEEE802154_TLX_BLE_COEXIST)
+    // Start a BLE scheduler task before enabling the 802.15.4 time slots. Otherwise
+    // Thread's tlx_start_radio() waits indefinitely for the controller handoff.
+    // The first advertising arbiter request replaces this bootstrap advertisement.
+    static const bt_data bootstrapData[] = {
+        BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
+    };
+    const bt_le_adv_param bootstrapParams = BT_LE_ADV_PARAM_INIT(0, BT_GAP_ADV_FAST_INT_MIN_1, BT_GAP_ADV_FAST_INT_MAX_1, nullptr);
+    err                                   = bt_le_adv_start(&bootstrapParams, bootstrapData, ARRAY_SIZE(bootstrapData), nullptr, 0);
+    VerifyOrReturnError(err == 0, MapErrorZephyr(err));
+    tlx_bt_802154_dual_mode_start();
+    ChipLogProgress(DeviceLayer, "BLE/Thread coexistence started");
+#endif
 
     TEMPORARY_RETURN_IGNORED BLEAdvertisingArbiter::Init(static_cast<uint8_t>(id));
 
