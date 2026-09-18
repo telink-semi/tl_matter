@@ -73,6 +73,20 @@ if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
   endif()
 
   FetchContent_MakeAvailable(telink_aliro)
+
+  # Aliro SDK v1.2.0 was packaged with the BLE + UWB flow enabled,
+  # so its protocol archive references the UWB driver adapter even when the
+  # parent application selects BLE-only RKE.
+  if(CONFIG_ALIRO_TRANSPORT_BLE AND
+     NOT EXISTS "${telink_aliro_SOURCE_DIR}/src/aliro/protocol/aliro_transaction_control.c")
+    target_sources(app PRIVATE
+      "${telink_aliro_SOURCE_DIR}/src/drivers/uwb/uwb.c"
+    )
+    target_include_directories(app PRIVATE
+      "${telink_aliro_SOURCE_DIR}/src/aliro/protocol"
+    )
+  endif()
+
   target_link_libraries(app PRIVATE Telink::Aliro)
 endif()
 
