@@ -31,11 +31,10 @@ env:
 
 jobs:
     chef_linux_all_devices:
-        if:false
+        if: false
         name: Chef - Linux CI Examples (All chef devices)
         timeout-minutes: 120
         runs-on: ubuntu-latest
-        if: github.actor != 'restyled-io[bot]'
 
         container:
             image: ghcr.io/project-chip/chip-build:181
@@ -56,9 +55,8 @@ jobs:
                   ./scripts/run_in_build_env.sh "./examples/chef/chef.py --ci_linux"
 
     chef_device_functional_test:
-        if:false
+        if: false
         name: Chef - Device functional tests (Linux)
-        if: github.actor != 'restyled-io[bot]'
         timeout-minutes: 90
         runs-on: ubuntu-latest
         container:
@@ -95,10 +93,9 @@ jobs:
                   scripts/run_in_python_env.sh out/python_env './scripts/tests/run_python_test.py --app examples/chef/linux/out/rootnode_dimmablelight_bCwGYSDpoe --factory-reset --script ./examples/chef/tests/dimmablelight_test.py --script-args "--commissioning-method on-network --discriminator 3840 --passcode 20202021" --app-stdin-pipe /tmp/chef_stdin.txt'
 
     chef_esp32:
-        if:false
+        if: false
         name: Chef - ESP32 CI Examples
         runs-on: ubuntu-latest
-        if: github.actor != 'restyled-io[bot]'
 
         container:
             image: ghcr.io/project-chip/chip-build-esp32:181
@@ -160,9 +157,9 @@ jobs:
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
                 platform: telink
-            # - name: Update Zephyr to specific revision (for developers purpose)
-            #   shell: bash
-            #   run: scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py 1f4804a19fe7ba792bfc315948043d5515e74cd2"
+            - name: Update Zephyr version 4.1.0 (develop) to specific revision (for developers purpose)
+              run:
+                scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py https://github.com/telink-semi/tl_zephyr.git 37a3359e1e067405a7249931f5be1a0fd72bde59 --sdk-repo https://github.com/telink-semi/tl_ble_sdk_zephyr.git --sdk-hash 169a4bddb989da595d261db464584b84443b86b9"
             - name: CI Examples Telink
               shell: bash
               run: |
