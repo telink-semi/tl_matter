@@ -24,7 +24,7 @@ Matter-over-Thread device on TL521X (A0) with the lighting-app.
 
 This patch release brings the following changes on top of tl_v1.4.0:
 
--   **Dependencies:** Update `tl_zephyr` to `37a3359e` and `tl_ble_sdk_zephyr`
+-   **Dependencies:** Update `tl_zephyr` to `6db8c39f` and `tl_ble_sdk_zephyr`
     to `aff054a7` ([#54](https://github.com/telink-semi/tl_matter/pull/54)).
 -   **CI:** Fix invalid `chef.yaml` YAML (`if:false` → `if: false`) and
     incorrect disabled workflow file suffixes (`disalbed`/`dsiabled` →
@@ -81,7 +81,7 @@ This patch release brings the following changes on top of tl_v1.4.0:
 
 | Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                                      |
 | ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`37a3359e`](https://github.com/telink-semi/tl_zephyr/commit/37a3359e1e067405a7249931f5be1a0fd72bde59)         | TL521x support + cumulative fixes (incl. iOS reconnection) |
+| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`6db8c39f`](https://github.com/telink-semi/tl_zephyr/commit/6db8c39f0a1f924466cac69e8c8828c8a7eec06f)         | TL521x support + cumulative fixes (incl. iOS reconnection) |
 | **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`aff054a7`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/aff054a7b9b495a51881aed4d45123551955a828) | Required by TL521X                                         |
 | **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`31f167f`](https://github.com/telink-semi/hal_telink/commit/31f167f86a5ea2bd28e4c07c598586ae72bd332e)         | Contains hal_v1 and hal_v2 sources                         |
 | **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Bootloader; required for OTA/DFU                           |
@@ -138,7 +138,7 @@ support.
 
 | Property   | Version                                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------------------- |
-| **Commit** | [37a3359e](https://github.com/telink-semi/tl_zephyr/commit/37a3359e1e067405a7249931f5be1a0fd72bde59) |
+| **Commit** | [6db8c39f](https://github.com/telink-semi/tl_zephyr/commit/6db8c39f0a1f924466cac69e8c8828c8a7eec06f) |
 
 ### Chip &amp; Hardware Versions
 
