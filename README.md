@@ -17,7 +17,7 @@ Connected Home over IP (CHIP) project**
 
 -   For development environment setup, SDK acquisition, and quick-start
     instructions, refer to the
-    [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md).
+    [Telink Matter Getting Started Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/getstarted/tl_matter_sdk_get_started_en/).
 -   For a deeper walkthrough, see the online
     [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)
     (Chapter **Obtaining Matter Source Code** covers the initial setup).
@@ -84,13 +84,13 @@ SDK version from the drop-down list on the left.
 
 ## 🚀 Quick Reference
 
-| Resource              | Description                                | Link                                                                                                                         |
-| --------------------- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Release Note**      | Telink Matter SDK Changelog & New Features | [Telink Matter SDK Release Note](docs/platforms/telink/releases/telink_release_notes.md)                                     |
-| **Get Started Guide** | SDK Quick Start Guide                      | [Telink Matter Getting Started](docs/platforms/telink/telink_getting_started.md)                                             |
-| **Developer Guide**   | Telink Matter Developer Guide (online)     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/) |
-| **Examples**          | Matter Sample Applications                 | See [examples](examples/) (filter by `telink`)                                                                               |
-| **Dependency**        | Telink Zephyr SDK                          | [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/README.md)                                    |
+| Resource              | Description                                | Link                                                                                                                                |
+| --------------------- | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Release Note**      | Telink Matter SDK Changelog & New Features | [Telink Matter SDK Release Note](docs/platforms/telink/releases/telink_release_notes.md)                                            |
+| **Get Started Guide** | SDK Quick Start Guide                      | [Telink Matter Getting Started](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/getstarted/tl_matter_sdk_get_started_en/) |
+| **Developer Guide**   | Telink Matter Developer Guide (online)     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/en/software/res/sdk/matter/telink_matter_developer_guide_en/)        |
+| **Examples**          | Matter Sample Applications                 | See [examples](examples/) (filter by `telink`)                                                                                      |
+| **Dependency**        | Telink Zephyr SDK                          | [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/README.md)                                           |
 
 ---
 
