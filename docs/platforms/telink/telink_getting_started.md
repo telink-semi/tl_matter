@@ -82,7 +82,7 @@ mkdir -p ~/zephyrproject && cd ~/zephyrproject
 git clone https://github.com/telink-semi/tl_matter.git connectedhomeip
 cd connectedhomeip
 git checkout <telink_matter_branch>     # e.g. dev-tlk_v1.5
-./scripts/checkout_submodules.py --platform telink,linux
+./scripts/checkout_submodules.py --platform telink linux
 ```
 
 ### 2.3 Bootstrap the Matter build environment
@@ -257,7 +257,7 @@ west update
 cd ~/zephyrproject/connectedhomeip
 git branch --show-current     # should be dev-tlk_v1.5
 git checkout dev-tlk_v1.5     # switch if needed
-./scripts/checkout_submodules.py --platform telink,linux
+./scripts/checkout_submodules.py --platform telink linux
 ```
 
 See the [Release Notes](./releases/telink_release_notes.md) for the matched
