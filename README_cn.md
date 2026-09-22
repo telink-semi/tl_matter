@@ -16,7 +16,7 @@
 协议实现**
 
 -   开发环境搭建、SDK 获取及快速上手说明，请参阅
-    [Telink Matter Getting Started Guide](docs/platforms/telink/telink_getting_started.md)。
+    [Telink Matter Getting Started Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/getstarted/tl_matter_sdk_get_started_cn/)。
 -   更深入的讲解，请参阅在线
     [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/)
     （**获取 Matter 源代码** 章节包含初始环境搭建）。
@@ -81,13 +81,13 @@ Release Notes 查看。
 
 ## 🚀 快速参考
 
-| 资源                  | 说明                               | 链接                                                                                                                         |
-| --------------------- | ---------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **Release Note**      | Telink Matter SDK 变更日志与新特性 | [Telink Matter SDK Release Note](docs/platforms/telink/releases/telink_release_notes.md)                                     |
-| **Get Started Guide** | SDK 快速入门指南                   | [Telink Matter Getting Started](docs/platforms/telink/telink_getting_started.md)                                             |
-| **Developer Guide**   | Telink Matter 开发手册（在线）     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/) |
-| **Examples**          | Matter 示例应用                    | 参见 [examples](examples/)（按 `telink` 筛选）                                                                               |
-| **Dependency**        | Telink Zephyr SDK                  | [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/README.md)                                    |
+| 资源                  | 说明                               | 链接                                                                                                                                |
+| --------------------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **Release Note**      | Telink Matter SDK 变更日志与新特性 | [Telink Matter SDK Release Note](docs/platforms/telink/releases/telink_release_notes.md)                                            |
+| **Get Started Guide** | SDK 快速入门指南                   | [Telink Matter Getting Started](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/getstarted/tl_matter_sdk_get_started_cn/) |
+| **Developer Guide**   | Telink Matter 开发手册（在线）     | [Telink Matter Developer Guide](https://doc.telink-semi.cn/doc/zh/software/res/sdk/matter/telink_matter_developer_guide_cn/)        |
+| **Examples**          | Matter 示例应用                    | 参见 [examples](examples/)（按 `telink` 筛选）                                                                                      |
+| **Dependency**        | Telink Zephyr SDK                  | [Telink Zephyr SDK](https://github.com/telink-semi/tl_zephyr/blob/dev-tlk_v4.1/README.md)                                           |
 
 ---
 
