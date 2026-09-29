@@ -40,6 +40,7 @@ AES
 AFL
 AIDL
 algs
+Aliro
 alloc
 allocator
 allocators
@@ -1719,3 +1720,13 @@ Zigbee
 zigbeealliance
 zigbeethread
 zsdk
+bdk
+Changelog
+changelog
+devicetree
+DLM
+downloaders
+ILM
+tlk
+TLX
+udev
