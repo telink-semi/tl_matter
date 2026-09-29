@@ -53,9 +53,9 @@
 #include <zephyr/version.h>
 #endif
 
-#ifdef CONFIG_BT_BONDABLE
+#if defined(CONFIG_BT_BONDABLE) || defined(CONFIG_BT_CHANNEL_SOUNDING)
 #include <zephyr/settings/settings.h>
-#endif // CONFIG_BT_BONDABLE
+#endif
 
 #if CHIP_DEVICE_LAYER_TARGET_NRFCONNECT
 #include <ncs_version.h>
@@ -65,10 +65,15 @@ extern "C" {
 extern __attribute__((noinline)) int b9x_bt_blc_mac_init(uint8_t * bt_mac);
 #elif defined(CONFIG_BT_TLX)
 extern __attribute__((noinline)) int tlx_bt_blc_mac_init(uint8_t * bt_mac);
+extern __attribute__((noinline)) void tlx_bt_802154_dual_mode_start(void);
 #elif defined(CONFIG_BT_W91)
 extern __attribute__((noinline)) void telink_bt_blc_mac_init(uint8_t * bt_mac);
 #endif
 }
+#endif
+
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+#include <platform/telink/CsReflector.h>
 #endif
 
 #include <array>
@@ -98,6 +103,10 @@ const bt_uuid_128 UUID128_CHIPoBLEChar_TX =
 const bt_uuid_128 UUID128_CHIPoBLEChar_C3 =
     BT_UUID_INIT_128(0x04, 0x8F, 0x21, 0x83, 0x8A, 0x74, 0x7D, 0xB8, 0xF2, 0x45, 0x72, 0x87, 0x38, 0x02, 0x63, 0x64);
 #endif
+#if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
+const bt_uuid_128 UUID128_CHIPoBLEChar_ChipID =
+    BT_UUID_INIT_128(0x04, 0x8F, 0x21, 0x83, 0x8A, 0x74, 0x7D, 0xB8, 0xF2, 0x45, 0x72, 0x87, 0x38, 0x02, 0xA1, 0x01);
+#endif /* CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE */
 
 bt_uuid_16 UUID16_CHIPoBLEService = BT_UUID_INIT_16(0xFFF6);
 
@@ -133,6 +142,12 @@ bt_gatt_attr sChipoBleAttributes[] = {
                                BT_GATT_PERM_READ,
                                BLEManagerImpl::HandleC3Read, nullptr, nullptr),
 #endif
+#if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
+        BT_GATT_CHARACTERISTIC(&UUID128_CHIPoBLEChar_ChipID.uuid,
+                               BT_GATT_CHRC_READ,
+                               BT_GATT_PERM_READ,
+                               BLEManagerImpl::HandleChipIDRead, nullptr, nullptr),
+#endif /* CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE */
 };
 
 bt_gatt_service sChipoBleService = BT_GATT_SERVICE(sChipoBleAttributes);
@@ -206,6 +221,19 @@ int InitRandomStaticAddress(bool idPresent, int & id)
 
 } // unnamed namespace
 
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_BT_TLX)
+// Telink TLX: keep a scheduler task active for BLE/802.15.4 coexistence.
+int StartMinimalBLEAdvertisement()
+{
+    static const struct bt_data minimal_ad[] = {
+        BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
+    };
+    const struct bt_le_adv_param params =
+        BT_LE_ADV_PARAM_INIT(0 /* non-connectable, non-scannable */, BT_GAP_ADV_FAST_INT_MIN_1, BT_GAP_ADV_FAST_INT_MAX_1, NULL);
+    return bt_le_adv_start(&params, minimal_ad, ARRAY_SIZE(minimal_ad), NULL, 0);
+}
+#endif // CONFIG_BT_TLX
+
 BLEManagerImpl BLEManagerImpl::sInstance;
 
 CHIP_ERROR BLEManagerImpl::_Init()
@@ -245,6 +273,14 @@ CHIP_ERROR BLEManagerImpl::_Init()
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
 #endif
 #endif // CONFIG_BT_BONDABLE
+
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_BT_TLX)
+    // Telink TLX: start a minimal BLE advertisement before dual-mode so Thread's tlx_start_radio() does not block.
+    int adv_err = StartMinimalBLEAdvertisement();
+    VerifyOrReturnError(adv_err == 0, MapErrorZephyr(adv_err));
+
+    tlx_bt_802154_dual_mode_start();
+#endif
 
     TEMPORARY_RETURN_IGNORED BLEAdvertisingArbiter::Init(static_cast<uint8_t>(id));
 
@@ -332,6 +368,15 @@ void BLEManagerImpl::DriveBLEState()
                 mFlags.Clear(Flags::kChipoBleGattServiceRegister);
             }
         }
+
+#if defined(CONFIG_BT_TLX) && CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION &&                                                 \
+    !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+        // Telink TLX: stop the minimal advertisement once Thread is attached.
+        if (ConnectivityMgr().IsThreadAttached())
+        {
+            bt_le_adv_stop();
+        }
+#endif
     }
 }
 
@@ -430,6 +475,16 @@ CHIP_ERROR BLEManagerImpl::RegisterGattService()
 
         VerifyOrReturnError(err == 0, MapErrorZephyr(err));
         mFlags.Set(Flags::kChipoBleGattServiceRegister);
+
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+        // Register RAS GATT service for Channel Sounding (must be after settings load).
+        settings_load();
+        if (!mFlags.Has(Flags::kRasGattServiceRegistered))
+        {
+            CsReflector::Init();
+            mFlags.Set(Flags::kRasGattServiceRegistered);
+        }
+#endif
     }
     return CHIP_NO_ERROR;
 }
@@ -661,6 +716,15 @@ CHIP_ERROR BLEManagerImpl::HandleGAPDisconnect(const ChipDeviceEvent * event)
 exit:
     // Unref bt_conn before scheduling DriveBLEState.
     bt_conn_unref(connEvent->BtConn);
+
+#if defined(CONFIG_BT_TLX) && CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION &&                                                 \
+    !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+    // Telink TLX: keep BLE idle after disconnect (bt_conn_unref() may resume advertising).
+    if (!mFlags.Has(Flags::kAdvertisingEnabled))
+    {
+        bt_le_adv_stop();
+    }
+#endif
 
     ChipDeviceEvent disconnectEvent;
     disconnectEvent.Type = DeviceEventType::kCHIPoBLEConnectionClosed;
@@ -999,6 +1063,10 @@ void BLEManagerImpl::HandleConnect(struct bt_conn * conId, uint8_t err)
 
     PlatformMgr().LockChipStack();
 
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+    CsReflector::OnConnected(conId, err);
+#endif
+
     sInstance.mTotalConnNum++;
     ChipLogProgress(DeviceLayer, "Current number of connections: %u/%u", sInstance.mTotalConnNum, CONFIG_BT_MAX_CONN);
 
@@ -1024,6 +1092,10 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
     bt_conn_info bt_info;
 
     PlatformMgr().LockChipStack();
+
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+    CsReflector::OnDisconnected(conId);
+#endif
 
     if (sInstance.mTotalConnNum > 0)
     {
@@ -1065,6 +1137,36 @@ ssize_t BLEManagerImpl::HandleC3Read(struct bt_conn * conId, const struct bt_gat
                              static_cast<uint16_t>(sInstance.c3CharDataBufferHandle->DataLength()));
 }
 #endif
+
+#if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
+#ifdef __cplusplus
+extern "C" {
+#endif
+#include "efuse.h"
+#ifdef __cplusplus
+}
+#endif
+#include <zephyr/drivers/hwinfo.h>
+ssize_t BLEManagerImpl::HandleChipIDRead(struct bt_conn * conId, const struct bt_gatt_attr * attr, void * buf, uint16_t len,
+                                         uint16_t offset)
+{
+    // Example chip_id data storage (replace with actual chip_id value)
+    // uint8_t chip_id[] = { 0x42, 0xe3, 0x03, 0xb4, 0xcf, 0x3c, 0xe6, 0x32, 0x36, 0x37, 0x36, 0x42, 0x50, 0x55, 0x76, 0xce };
+    ChipLogDetail(DeviceLayer, "Read request received for CHIPoBLE Chip ID (ConnId 0x%02x)", bt_conn_index(conId));
+
+    uint8_t chip_id[16]  = { 0 };
+    uint8_t ieee_addr[8] = { 0 };
+
+    if (efuse_get_ieee_addr(ieee_addr) != DRV_API_SUCCESS)
+    {
+        ChipLogDetail(DeviceLayer, "Failed to get chip ID.");
+        return 0;
+    }
+
+    memcpy(chip_id, ieee_addr, 8);
+    return bt_gatt_attr_read(conId, attr, buf, len, offset, chip_id, sizeof(chip_id));
+}
+#endif /* CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE */
 
 #ifdef CONFIG_CHIP_CUSTOM_BLE_ADV_DATA
 void BLEManagerImpl::SetCustomAdvertising(Span<bt_data> CustomAdvertising)

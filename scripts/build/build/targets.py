@@ -847,6 +847,10 @@ def BuildTelinkTarget():
         TargetPart('tl3218x', board=TelinkBoard.TL3218X),
         TargetPart('tl3218x_ml3m', board=TelinkBoard.TL3218X_ML3M),
         TargetPart('tl3218x_retention', board=TelinkBoard.TL3218X_RETENTION),
+        TargetPart('tl3238x', board=TelinkBoard.TL3238X),
+        TargetPart('tl3238x_retention', board=TelinkBoard.TL3238X_RETENTION),
+        TargetPart('tl5218x', board=TelinkBoard.TL5218X),
+        TargetPart('tl5218x_retention', board=TelinkBoard.TL5218X_RETENTION),
         TargetPart('tl7218x', board=TelinkBoard.TL7218X),
         TargetPart('tl7218x_ml7g', board=TelinkBoard.TL7218X_ML7G),
         TargetPart('tl7218x_ml7m', board=TelinkBoard.TL7218X_ML7M),
@@ -893,6 +897,7 @@ def BuildTelinkTarget():
     target.AppendModifier('mars', mars_board_config=True)
     target.AppendModifier('usb', usb_board_config=True)
     target.AppendModifier('compress-lzma', compress_lzma_config=True)
+    target.AppendModifier('concurrent-connection', enable_concurrent_connection=True)
     target.AppendModifier('thread-analyzer', thread_analyzer_config=True)
     target.AppendModifier('precompiled-ot', precompiled_ot_config=True)
     target.AppendModifier('tflm', tflm_config=True)
@@ -901,6 +906,7 @@ def BuildTelinkTarget():
     target.AppendModifier("log-error", log_level=TelinkLogLevel.ERROR).ExceptIfRe("-log-(progress|all|none)")
     target.AppendModifier("log-none", log_level=TelinkLogLevel.NONE).ExceptIfRe("-log-(progress|error|all)")
     target.AppendModifier("log-all", log_level=TelinkLogLevel.ALL).ExceptIfRe("-log-(progress|error|none)")
+    target.AppendModifier('dual-mode', dual_mode_config=0)
 
     return target
 

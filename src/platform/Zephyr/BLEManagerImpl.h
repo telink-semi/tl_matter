@@ -90,6 +90,7 @@ private:
             0x0010, /**< The advertising state/configuration has changed, but the SoftDevice has yet to be updated. */
         kChipoBleGattServiceRegister = 0x0020, /**< The system has currently CHIPoBLE GATT service registered. */
         kExtendedAdvertisingEnabled  = 0x0040, /**< The application has enabled extended advertising. */
+        kRasGattServiceRegistered    = 0x0080, /**< The system has currently RAS GATT service registered. */
     };
 
     struct ServiceData;
@@ -155,6 +156,10 @@ public:
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static ssize_t HandleC3Read(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len, uint16_t offset);
 #endif
+#if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
+    static ssize_t HandleChipIDRead(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len,
+                                    uint16_t offset);
+#endif /* CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE */
 #ifdef CONFIG_CHIP_CUSTOM_BLE_ADV_DATA
     void SetCustomAdvertising(Span<bt_data> CustomAdvertising);
     void SetCustomScanResponse(Span<bt_data> CustomScanResponse);

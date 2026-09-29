@@ -73,6 +73,13 @@ static_library("telink") {
     ]
   }
 
+  if (chip_enable_cs) {
+    sources += [
+      "CsReflector.cpp",
+      "CsReflector.h",
+    ]
+  }
+
   if (chip_enable_thread || chip_enable_wifi) {
     sources += [
       "../Zephyr/InetUtils.cpp",
