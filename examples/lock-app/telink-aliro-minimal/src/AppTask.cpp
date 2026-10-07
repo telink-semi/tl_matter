@@ -23,9 +23,11 @@
 #include <LockManager.h>
 #include <app-common/zap-generated/attributes/Accessors.h>
 #include <app/data-model/Nullable.h>
+#include <app/server/Server.h>
 #include <errno.h>
 #include <zephyr/sys/atomic.h>
-#if CONFIG_ALIRO_TRANSPORT_BLE && !CONFIG_BT_EXT_ADV
+
+#if CONFIG_ALIRO_TRANSPORT_BLE
 #include <platform/Zephyr/BLEAdvertisingArbiter.h>
 #include <system/SystemError.h>
 #endif
@@ -41,8 +43,6 @@ using namespace ::chip::DeviceLayer::Internal;
 AppTask AppTask::sAppTask;
 
 namespace {
-// Publish BUSY before queuing an Aliro action so the reader cannot acknowledge
-// the previous final state while the application thread has not run yet.
 constexpr atomic_val_t kNoPendingAliroAction = -1;
 atomic_t sPendingAliroState                 = kNoPendingAliroAction;
 
@@ -67,51 +67,108 @@ void ApplyAliroLockState(intptr_t argument)
 
     LOG_INF("Applying authenticated Aliro RKE action on Matter thread: %s",
             state == TELINK_ALIRO_LOCK_STATE_SECURED ? "SECURED" : "UNSECURED");
+
     if (!LockMgr().LockAction(AppEvent::kEventType_DeviceAction, action, LockManager::OperationSource::kAliro,
                               kExampleEndpointId))
     {
         LOG_ERR("Aliro lock action failed");
     }
 
-    // LockManager now exposes the initiated/completed state, or the existing
-    // state if it rejected the request. Release the temporary queue state.
     atomic_set(&sPendingAliroState, kNoPendingAliroAction);
 }
 
-#if CONFIG_ALIRO_TRANSPORT_BLE && !CONFIG_BT_EXT_ADV
+#if CONFIG_ALIRO_TRANSPORT_BLE
+
 uint8_t sAliroServiceData[26];
 constexpr uint8_t kAliroAdvertisingFlags[] = { BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR };
+
+#if CONFIG_BT_EXT_ADV
+
+struct bt_le_ext_adv * sAliroExtAdvertising;
+
+#else
+
 const bt_data kAliroAdvertisingData[] = {
     BT_DATA(BT_DATA_FLAGS, kAliroAdvertisingFlags, sizeof(kAliroAdvertisingFlags)),
     BT_DATA(BT_DATA_SVC_DATA16, sAliroServiceData, sizeof(sAliroServiceData)),
 };
-// The primary packet already occupies all 31 bytes. Publish the service UUID
-// separately for centrals that scan by service UUID rather than service data.
+
 const bt_data kAliroScanResponseData[] = {
     BT_DATA(BT_DATA_UUID16_SOME, sAliroServiceData, 2),
     BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
 };
+
 static_assert(4 + 2 + sizeof(CONFIG_BT_DEVICE_NAME) - 1 <= 31, "Aliro scan response exceeds the 31-byte limit");
+
 BLEAdvertisingArbiter::Request sAliroAdvertisingRequest = {};
 
-// The SDK invokes these callbacks from Set/ClearAliroReaderConfig, on the
-// Matter thread. The arbiter owns restarts and gives commissioning priority.
+#endif
+
 int StartAliroAdvertising(uint8_t identity, const uint8_t * serviceData, size_t size)
 {
     if (serviceData == nullptr || size != sizeof(sAliroServiceData))
     {
         return -EINVAL;
     }
+
     memcpy(sAliroServiceData, serviceData, size);
-    sAliroAdvertisingRequest.priority        = UINT8_MAX;
-    sAliroAdvertisingRequest.options         = BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_IDENTITY;
-    sAliroAdvertisingRequest.minInterval     = BT_GAP_ADV_FAST_INT_MIN_2;
-    sAliroAdvertisingRequest.maxInterval     = BT_GAP_ADV_FAST_INT_MAX_2;
-    sAliroAdvertisingRequest.advertisingData = Span<const bt_data>(kAliroAdvertisingData);
+
+#if CONFIG_BT_EXT_ADV
+
+    const bt_data advertisingData[] = {
+        BT_DATA(BT_DATA_FLAGS, kAliroAdvertisingFlags, sizeof(kAliroAdvertisingFlags)),
+        BT_DATA(BT_DATA_SVC_DATA16, sAliroServiceData, sizeof(sAliroServiceData)),
+        BT_DATA(BT_DATA_UUID16_SOME, sAliroServiceData, 2),
+        BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+    };
+
+    bt_le_adv_param advertisingParameters = {};
+
+    advertisingParameters.id           = identity;
+    advertisingParameters.sid          = 0;
+    advertisingParameters.options      = BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_IDENTITY | BT_LE_ADV_OPT_EXT_ADV;
+    advertisingParameters.interval_min = BT_GAP_ADV_FAST_INT_MIN_2;
+    advertisingParameters.interval_max = BT_GAP_ADV_FAST_INT_MAX_2;
+
+    int err = bt_le_ext_adv_create(&advertisingParameters, nullptr, &sAliroExtAdvertising);
+    if (err != 0)
+    {
+        return err;
+    }
+
+    err = bt_le_ext_adv_set_data(sAliroExtAdvertising, advertisingData, ARRAY_SIZE(advertisingData), nullptr, 0);
+    if (err != 0)
+    {
+        (void) bt_le_ext_adv_delete(sAliroExtAdvertising);
+        sAliroExtAdvertising = nullptr;
+        return err;
+    }
+
+    bt_le_ext_adv_start_param startParameters = {};
+
+    err = bt_le_ext_adv_start(sAliroExtAdvertising, &startParameters);
+    if (err != 0)
+    {
+        (void) bt_le_ext_adv_delete(sAliroExtAdvertising);
+        sAliroExtAdvertising = nullptr;
+        return err;
+    }
+
+    LOG_INF("Aliro BLE advertising started");
+
+    return 0;
+
+#else
+
+    sAliroAdvertisingRequest.priority         = UINT8_MAX;
+    sAliroAdvertisingRequest.options          = BT_LE_ADV_OPT_CONN | BT_LE_ADV_OPT_USE_IDENTITY;
+    sAliroAdvertisingRequest.minInterval      = BT_GAP_ADV_FAST_INT_MIN_2;
+    sAliroAdvertisingRequest.maxInterval      = BT_GAP_ADV_FAST_INT_MAX_2;
+    sAliroAdvertisingRequest.advertisingData  = Span<const bt_data>(kAliroAdvertisingData);
     sAliroAdvertisingRequest.scanResponseData = Span<const bt_data>(kAliroScanResponseData);
-    sAliroAdvertisingRequest.identity        = identity;
-    sAliroAdvertisingRequest.useIdentity     = true;
-    sAliroAdvertisingRequest.onStarted      = [](int result) {
+    sAliroAdvertisingRequest.identity         = identity;
+    sAliroAdvertisingRequest.useIdentity      = true;
+    sAliroAdvertisingRequest.onStarted        = [](int result) {
         if (result == 0)
         {
             LOG_INF("Aliro BLE advertising started");
@@ -121,23 +178,98 @@ int StartAliroAdvertising(uint8_t identity, const uint8_t * serviceData, size_t 
             LOG_ERR("Aliro BLE advertising request failed: %d", result);
         }
     };
+
     CHIP_ERROR err = BLEAdvertisingArbiter::InsertRequest(sAliroAdvertisingRequest);
-    // The arbiter retains the request and retries after the commissioning
-    // connection is released, even when the single connection slot is busy.
+
     if (err == CHIP_NO_ERROR || err == System::MapErrorZephyr(-ENOMEM))
     {
         return 0;
     }
+
     BLEAdvertisingArbiter::CancelRequest(sAliroAdvertisingRequest);
+
     return -EIO;
+
+#endif
 }
 
 int StopAliroAdvertising()
 {
-    BLEAdvertisingArbiter::CancelRequest(sAliroAdvertisingRequest);
+#if CONFIG_BT_EXT_ADV
+
+    if (sAliroExtAdvertising == nullptr)
+    {
+        return 0;
+    }
+
+    int err = bt_le_ext_adv_stop(sAliroExtAdvertising);
+    if (err != 0)
+    {
+        return err;
+    }
+
+    err = bt_le_ext_adv_delete(sAliroExtAdvertising);
+    if (err != 0)
+    {
+        return err;
+    }
+
+    sAliroExtAdvertising = nullptr;
+
     return 0;
-}
+
+#else
+    BLEAdvertisingArbiter::CancelRequest(sAliroAdvertisingRequest);
+
+    return 0;
 #endif
+}
+
+#endif /* CONFIG_ALIRO_TRANSPORT_BLE */
+
+CHIP_ERROR StartAliro()
+{
+#if CONFIG_ALIRO_TRANSPORT_NFC
+    int err = telink_aliro_nfc_start();
+    if (err != 0 && err != -EALREADY)
+    {
+        LOG_ERR("Aliro NFC start failed: %d", err);
+        return CHIP_ERROR_INTERNAL;
+    }
+#endif
+
+#if CONFIG_ALIRO_TRANSPORT_BLE
+
+#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+    ReturnErrorOnFailure(AliroDelegate::GetInstance().InitializeCsaTestCredentials());
+#endif
+
+    if (telink_aliro_ble_start() != 0)
+    {
+        LOG_ERR("Aliro BLE start failed");
+        return CHIP_ERROR_INTERNAL;
+    }
+#endif
+
+    return CHIP_NO_ERROR;
+}
+
+void MatterDeviceEventHandler(const ChipDeviceEvent * event, intptr_t arg)
+{
+    (void) arg;
+
+    if (event->Type != DeviceEventType::kCommissioningComplete)
+    {
+        return;
+    }
+
+    CHIP_ERROR err = StartAliro();
+    if (err != CHIP_NO_ERROR)
+    {
+        LOG_ERR("Failed to start Aliro: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+}
+
 } // namespace
 
 CHIP_ERROR AppTask::Init(void)
@@ -162,7 +294,6 @@ CHIP_ERROR AppTask::Init(void)
         return err;
     }
 
-    // Register a Door Lock delegate to handle Aliro provisioning attributes/commands.
     ReturnErrorOnFailure(DoorLockServer::Instance().SetDelegate(kExampleEndpointId, &AliroDelegate::GetInstance()));
 
     telink_aliro_callbacks aliroCallbacks = {};
@@ -176,32 +307,22 @@ CHIP_ERROR AppTask::Init(void)
         return CHIP_ERROR_INTERNAL;
     }
 
-#if CONFIG_ALIRO_TRANSPORT_NFC
-    if (telink_aliro_nfc_start() != 0)
+#if CONFIG_ALIRO_TRANSPORT_BLE
+    const telink_aliro_ble_advertising_callbacks advertisingCallbacks = { StartAliroAdvertising, StopAliroAdvertising };
+
+    if (telink_aliro_ble_init(&advertisingCallbacks) != 0)
     {
-        LOG_ERR("Aliro NFC initialization failed");
         return CHIP_ERROR_INTERNAL;
     }
 #endif
 
-#if CONFIG_ALIRO_TRANSPORT_BLE
-#if !CONFIG_BT_EXT_ADV
-    const telink_aliro_ble_advertising_callbacks advertisingCallbacks = { StartAliroAdvertising, StopAliroAdvertising };
-    if (telink_aliro_ble_set_advertising_callbacks(&advertisingCallbacks) != 0)
+    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(MatterDeviceEventHandler, 0));
+
+    if (Server::GetInstance().GetFabricTable().FabricCount())
     {
-        return CHIP_ERROR_INTERNAL;
+        /* Device is already commissioned, starting Aliro */
+        ReturnErrorOnFailure(StartAliro());
     }
-#endif
-    if (telink_aliro_ble_init() != 0)
-    {
-        LOG_ERR("Aliro BLE initialization failed");
-        return CHIP_ERROR_INTERNAL;
-    }
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
-    ReturnErrorOnFailure(AliroDelegate::GetInstance().InitializeCsaTestCredentials());
-    LOG_WRN("CSA Aliro test credentials preloaded; FFF2 advertising will start after Matter commissioning");
-#endif
-#endif
 
     return CHIP_NO_ERROR;
 }
@@ -260,8 +381,6 @@ int AppTask::RequestAliroLockState(enum telink_aliro_lock_state state, void * co
         return -EBUSY;
     }
 
-    // DoorLockServer::SetLockState emits Matter events. Run it on the Matter
-    // event-loop thread instead of the application main thread.
     const CHIP_ERROR err = chip::DeviceLayer::PlatformMgr().ScheduleWork(ApplyAliroLockState, static_cast<intptr_t>(state));
     if (err != CHIP_NO_ERROR)
     {
@@ -269,6 +388,7 @@ int AppTask::RequestAliroLockState(enum telink_aliro_lock_state state, void * co
         atomic_set(&sPendingAliroState, kNoPendingAliroAction);
         return -ENOBUFS;
     }
+
     return 0;
 }
 
@@ -294,6 +414,7 @@ int AppTask::AuthorizeAliroEndpoint(const uint8_t * publicKey, size_t publicKeyS
     chip::DeviceLayer::PlatformMgr().UnlockChipStack();
 
     ChipLogProgress(Zcl, "[Aliro] Authenticated endpoint %s", authorized ? "accepted" : "rejected");
+
     return authorized ? 0 : -EACCES;
 }
 
@@ -304,11 +425,9 @@ void AppTask::AliroLockActionEventHandler(AppEvent * event)
         return;
     }
 
-    // Retained for compatibility with previously queued application events.
     ApplyAliroLockState(event->DeviceEvent.Action);
 }
 
-/* This is a button handler only */
 void AppTask::LockActionEventHandler(AppEvent * aEvent)
 {
     switch (LockMgr().getLockState())
