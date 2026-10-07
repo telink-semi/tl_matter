@@ -188,6 +188,7 @@ uint16_t AliroDelegate::GetNumberOfAliroEndpointKeysSupported()
 CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, const ByteSpan & verificationKey,
                                                const ByteSpan & groupIdentifier, const Optional<ByteSpan> & groupResolvingKey)
 {
+    int err;
     uint8_t groupSubIdentifier[sizeof(mAliroReaderGroupSubIdentifier)];
     ByteSpan effectiveSigningKey      = signingKey;
     ByteSpan effectiveVerificationKey = verificationKey;
@@ -213,39 +214,53 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
     ReturnErrorOnFailure(Crypto::DRBG_get_bytes(groupSubIdentifier, sizeof(groupSubIdentifier)));
 #endif
 
-    int err = telink_aliro_set_reader_config(effectiveSigningKey.data(), effectiveSigningKey.size(),
-                                             effectiveVerificationKey.data(), effectiveVerificationKey.size(),
-                                             effectiveGroupIdentifier.data(), effectiveGroupIdentifier.size(), groupSubIdentifier,
-                                             sizeof(groupSubIdentifier));
-    VerifyOrReturnError(err == 0, CHIP_ERROR_INTERNAL,
-                        ChipLogError(Zcl, "Unable to apply Aliro reader configuration: %d", err));
-
 #if CONFIG_ALIRO_TRANSPORT_BLE
+    uint8_t previousGroupResolvingKey[sizeof(mAliroGroupResolvingKey)] = {};
+    const bool previousHasGroupResolvingKey = mAliroHasGroupResolvingKey;
+
+    if (previousHasGroupResolvingKey)
+    {
+        memcpy(previousGroupResolvingKey, mAliroGroupResolvingKey, sizeof(previousGroupResolvingKey));
+    }
+
     err = telink_aliro_ble_set_group_resolving_key(
         effectiveGroupResolvingKey.HasValue() ? effectiveGroupResolvingKey.Value().data() : nullptr,
         effectiveGroupResolvingKey.HasValue() ? effectiveGroupResolvingKey.Value().size() : 0);
     if (err != 0)
     {
         ChipLogError(Zcl, "Unable to apply Aliro BLE group resolving key: %d", err);
-        (void) telink_aliro_clear_reader_config();
-        return CHIP_ERROR_INTERNAL;
-    }
-
-    err = telink_aliro_ble_start();
-    if (err != 0)
-    {
-        ChipLogError(Zcl, "Unable to start Aliro BLE advertising: %d", err);
-        (void) telink_aliro_ble_set_group_resolving_key(nullptr, 0);
-        (void) telink_aliro_clear_reader_config();
         return CHIP_ERROR_INTERNAL;
     }
 #endif
+
+    err = telink_aliro_set_reader_config(effectiveSigningKey.data(), effectiveSigningKey.size(),
+                                         effectiveVerificationKey.data(), effectiveVerificationKey.size(),
+                                         effectiveGroupIdentifier.data(), effectiveGroupIdentifier.size(),
+                                         groupSubIdentifier, sizeof(groupSubIdentifier));
+
+    if (err != 0)
+    {
+#if CONFIG_ALIRO_TRANSPORT_BLE
+        int restoreErr = telink_aliro_ble_set_group_resolving_key(
+            previousHasGroupResolvingKey ? previousGroupResolvingKey : nullptr,
+            previousHasGroupResolvingKey ? sizeof(previousGroupResolvingKey) : 0);
+
+        if (restoreErr != 0)
+        {
+            ChipLogError(Zcl, "Unable to restore previous Aliro BLE group resolving key: %d", restoreErr);
+        }
+#endif
+
+        ChipLogError(Zcl, "Unable to apply Aliro reader configuration: %d", err);
+        return CHIP_ERROR_INTERNAL;
+    }
 
     memcpy(mAliroReaderVerificationKey, effectiveVerificationKey.data(), sizeof(mAliroReaderVerificationKey));
     memcpy(mAliroReaderGroupIdentifier, effectiveGroupIdentifier.data(), sizeof(mAliroReaderGroupIdentifier));
     memcpy(mAliroReaderGroupSubIdentifier, groupSubIdentifier, sizeof(mAliroReaderGroupSubIdentifier));
 
     mAliroHasGroupResolvingKey = effectiveGroupResolvingKey.HasValue();
+
     if (mAliroHasGroupResolvingKey)
     {
         memcpy(mAliroGroupResolvingKey, effectiveGroupResolvingKey.Value().data(), sizeof(mAliroGroupResolvingKey));
@@ -256,12 +271,21 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
     }
 
     mAliroStateInitialized = true;
+
     return CHIP_NO_ERROR;
 }
 
 #if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
 CHIP_ERROR AliroDelegate::InitializeCsaTestCredentials()
 {
+    if (mAliroStateInitialized && !mAliroHasGroupResolvingKey &&
+        memcmp(mAliroReaderVerificationKey, kCsaReaderVerificationKey, sizeof(mAliroReaderVerificationKey)) == 0 &&
+        memcmp(mAliroReaderGroupIdentifier, kCsaReaderGroupIdentifier, sizeof(mAliroReaderGroupIdentifier)) == 0 &&
+        memcmp(mAliroReaderGroupSubIdentifier, kCsaReaderGroupSubIdentifier, sizeof(mAliroReaderGroupSubIdentifier)) == 0)
+    {
+        return CHIP_NO_ERROR;
+    }
+
     return SetAliroReaderConfig(ByteSpan(kCsaReaderSigningKey), ByteSpan(kCsaReaderVerificationKey),
                                 ByteSpan(kCsaReaderGroupIdentifier), NullOptional);
 }
