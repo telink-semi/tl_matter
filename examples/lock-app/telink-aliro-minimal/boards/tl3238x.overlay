@@ -37,9 +37,27 @@
 };
 
 &gspi {
-	clock-frequency = <1000000>;
+	clock-frequency = <48000000>;
 	label = "SPI_0";
-	status = "okay";
+
+	cs0-pin = "GPIO_PE4";
+	cs1-pin = "GPIO_PA1";
+
+	nfc0: st25r@0 {
+		compatible = "st,st25r";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		irq-gpios = <&gpioa 5 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+	};
+
+	uwb0: sr150@1 {
+		compatible = "nxp,sr150";
+		reg = <1>;
+		spi-max-frequency = <8000000>;
+		irq-gpios = <&gpioa 2 (GPIO_ACTIVE_HIGH | GPIO_PULL_DOWN)>;
+		reset-gpios = <&gpioa 3 GPIO_ACTIVE_HIGH>;
+		wakeup-gpios = <&gpioa 4 GPIO_ACTIVE_HIGH>;
+	};
 };
 
 / {
