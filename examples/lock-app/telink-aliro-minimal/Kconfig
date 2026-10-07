@@ -29,6 +29,10 @@ config ALIRO_TRANSPORT_NFC
     select GPIO
     select SPI
 
+config NFC_FRONTEND
+    bool
+    default ALIRO_TRANSPORT_NFC
+
 config ALIRO_TRANSPORT_BLE
     bool "Enable Aliro BLE-only RKE transport"
     default n
