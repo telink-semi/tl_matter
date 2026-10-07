@@ -26,15 +26,42 @@ get_filename_component(CHIP_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/third_party/connect
 get_filename_component(TELINK_COMMON ${CHIP_ROOT}/examples/platform/telink REALPATH)
 get_filename_component(GEN_DIR ${CHIP_ROOT}/zzz_generated/ REALPATH)
 
+set(TELINK_ALIRO_SDK_URL
+    "https://doc.telink-semi.cn/Zephyr/binaries/public/aliro/telink-aliro-sdk-latest.tar.gz"
+    CACHE STRING "Telink Aliro SDK archive URL")
+
+if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
+  FetchContent_Declare(telink_aliro
+    SOURCE_DIR "${FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO}"
+    SOURCE_SUBDIR cmake
+  )
+else()
+  if(NOT TELINK_ALIRO_SDK_URL)
+    message(FATAL_ERROR
+      "TELINK_ALIRO_SDK_URL is not set. Provide the published SDK URL or "
+      "-DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/path/to/telink_aliro."
+    )
+  endif()
+
+  FetchContent_Declare(telink_aliro
+    URL "${TELINK_ALIRO_SDK_URL}"
+    TLS_VERIFY TRUE
+    SOURCE_SUBDIR cmake
+  )
+endif()
+
+# Populate bindings before Zephyr processes the overlay; build the SDK below.
+FetchContent_MakeAvailable(telink_aliro)
+list(APPEND DTS_ROOT
+  "${telink_aliro_SOURCE_DIR}"
+  "${telink_aliro_SOURCE_DIR}/src/drivers/st25r/zephyr"
+)
+
 include(${TELINK_COMMON}/common.cmake)
 include(${CHIP_ROOT}/config/telink/app/enable-gnu-std.cmake)
 include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
 project(chip-telink-lock-aliro-minimal-example)
-
-set(TELINK_ALIRO_SDK_URL
-    "https://doc.telink-semi.cn/Zephyr/binaries/public/aliro/telink-aliro-sdk-latest.tar.gz"
-    CACHE STRING "Telink Aliro SDK archive URL")
 
 if(NOT CONFIG_ALIRO_TRANSPORT_NFC AND NOT CONFIG_ALIRO_TRANSPORT_BLE)
   message(FATAL_ERROR "Enable at least one Aliro transport")
@@ -52,27 +79,7 @@ if(CONFIG_ALIRO_TRANSPORT_BLE AND CONFIG_SOC_RISCV_TELINK_TLX AND NOT CONFIG_IEE
 endif()
 
 if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
-  if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
-    FetchContent_Declare(telink_aliro
-      SOURCE_DIR "${FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO}"
-      SOURCE_SUBDIR cmake/zephyr
-    )
-  else()
-    if(NOT TELINK_ALIRO_SDK_URL)
-      message(FATAL_ERROR
-        "TELINK_ALIRO_SDK_URL is not set. Provide the published SDK URL or "
-        "-DFETCHCONTENT_SOURCE_DIR_TELINK_ALIRO=/path/to/telink_aliro."
-      )
-    endif()
-
-    FetchContent_Declare(telink_aliro
-      URL "${TELINK_ALIRO_SDK_URL}"
-      TLS_VERIFY TRUE
-      SOURCE_SUBDIR cmake/zephyr
-    )
-  endif()
-
-  FetchContent_MakeAvailable(telink_aliro)
+  add_subdirectory("${telink_aliro_SOURCE_DIR}/cmake/zephyr" "${telink_aliro_BINARY_DIR}")
 
   # Aliro SDK v1.2.0 was packaged with the BLE + UWB flow enabled,
   # so its protocol archive references the UWB driver adapter even when the
