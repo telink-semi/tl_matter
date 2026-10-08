@@ -66,6 +66,7 @@ struct key_pool_data
 /* Public APIs */
 
 bool key_pool_init(struct key_pool_data * key_pool);
+void key_pool_deinit(struct key_pool_data * key_pool);
 void key_pool_set_callback(struct key_pool_data * key_pool, key_pool_on_button_change_t on_button_change, void * context);
 
 #ifdef __cplusplus
