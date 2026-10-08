@@ -93,6 +93,9 @@ static void key_pool_on_pin_isr(const struct device * dev, struct gpio_callback 
 bool key_pool_init(struct key_pool_data * key_pool)
 {
     bool result = true;
+    struct key_pool_aux_data * key_pool_aux = NULL;
+    size_t callbacks_added_cnt       = 0;
+    size_t interrupts_enabled_cnt     = 0;
 
     do
     {
@@ -135,7 +138,7 @@ bool key_pool_init(struct key_pool_data * key_pool)
             break;
         }
         /* add callbacks to all ports */
-        struct key_pool_aux_data * key_pool_aux =
+        key_pool_aux =
             (struct key_pool_aux_data *) malloc(sizeof(struct key_pool_aux_data) * key_pool_port_number(key_pool));
 
         if (!key_pool_aux)
@@ -144,7 +147,6 @@ bool key_pool_init(struct key_pool_data * key_pool)
             break;
         }
 
-        key_pool->aux                  = key_pool_aux;
         size_t key_pool_aux_inited_cnt = 0;
 
         for (size_t i = 0; i < key_pool->inp_len; i++)
@@ -163,7 +165,8 @@ bool key_pool_init(struct key_pool_data * key_pool)
             {
                 key_pool_aux[key_pool_aux_inited_cnt].key_pool = key_pool;
                 key_pool_aux[key_pool_aux_inited_cnt].port     = key_pool->inp[i].port;
-                gpio_init_callback(&key_pool_aux[key_pool_aux_inited_cnt].callback, key_pool_on_pin_isr, BIT(key_pool->inp[i].pin));
+                gpio_init_callback(&key_pool_aux[key_pool_aux_inited_cnt].callback, key_pool_on_pin_isr,
+                                   BIT(key_pool->inp[i].pin));
                 key_pool_aux_inited_cnt++;
             }
         }
@@ -174,6 +177,7 @@ bool key_pool_init(struct key_pool_data * key_pool)
                 result = false;
                 break;
             }
+            callbacks_added_cnt++;
         }
         if (!result)
         {
@@ -188,6 +192,7 @@ bool key_pool_init(struct key_pool_data * key_pool)
                 result = false;
                 break;
             }
+            interrupts_enabled_cnt++;
         }
         if (!result)
         {
@@ -196,7 +201,24 @@ bool key_pool_init(struct key_pool_data * key_pool)
 
         /* set all keys to current state */
         key_pool_poll(key_pool, true);
+
+        /* All steps succeeded: commit the pointer to the struct */
+        key_pool->aux = key_pool_aux;
     } while (0);
+
+    /* Failure cleanup: disable interrupts, remove callbacks, free memory */
+    if (!result && key_pool_aux)
+    {
+        for (size_t i = 0; i < interrupts_enabled_cnt; i++)
+        {
+            (void) gpio_pin_interrupt_configure_dt(&key_pool->inp[i], GPIO_INT_DISABLE);
+        }
+        for (size_t i = 0; i < callbacks_added_cnt; i++)
+        {
+            (void) gpio_remove_callback(key_pool_aux[i].port, &key_pool_aux[i].callback);
+        }
+        free(key_pool_aux);
+    }
 
     return result;
 }
