@@ -35,7 +35,8 @@ config NFC_FRONTEND
 
 config ALIRO_TRANSPORT_BLE
     bool "Enable Aliro BLE-only RKE transport"
-    default n
+    default n if SOC_RISCV_TELINK_TL323X
+    default y if SOC_RISCV_TELINK_TL721X
     select BT
     select BT_PERIPHERAL
     select BT_HOST_CRYPTO
