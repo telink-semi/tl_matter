@@ -29,7 +29,7 @@ using namespace chip::app::Clusters::DoorLock;
 
 AliroDelegate AliroDelegate::sInstance;
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
 namespace {
 
 // Public demo credentials used by the CSA Aliro Test Tool example project.
@@ -203,7 +203,7 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
         VerifyOrReturnError(groupResolvingKey.Value().size() == sizeof(mAliroGroupResolvingKey), CHIP_ERROR_INVALID_ARGUMENT);
     }
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
     effectiveSigningKey      = ByteSpan(kCsaReaderSigningKey);
     effectiveVerificationKey = ByteSpan(kCsaReaderVerificationKey);
     effectiveGroupIdentifier = ByteSpan(kCsaReaderGroupIdentifier);
@@ -275,7 +275,7 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
     return CHIP_NO_ERROR;
 }
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
 CHIP_ERROR AliroDelegate::InitializeCsaTestCredentials()
 {
     if (mAliroStateInitialized && !mAliroHasGroupResolvingKey &&
