@@ -135,8 +135,10 @@ bool key_pool_init(struct key_pool_data * key_pool)
             break;
         }
         /* add callbacks to all ports */
+        /* Use calloc for zero-initialized memory: uninitialized aux entries have port == NULL,
+           which key_pool_deinit uses to skip unregistered callbacks safely. */
         struct key_pool_aux_data * key_pool_aux =
-            (struct key_pool_aux_data *) malloc(sizeof(struct key_pool_aux_data) * key_pool_port_number(key_pool));
+            (struct key_pool_aux_data *) calloc(key_pool_port_number(key_pool), sizeof(struct key_pool_aux_data));
 
         if (!key_pool_aux)
         {
@@ -163,7 +165,8 @@ bool key_pool_init(struct key_pool_data * key_pool)
             {
                 key_pool_aux[key_pool_aux_inited_cnt].key_pool = key_pool;
                 key_pool_aux[key_pool_aux_inited_cnt].port     = key_pool->inp[i].port;
-                gpio_init_callback(&key_pool_aux[key_pool_aux_inited_cnt].callback, key_pool_on_pin_isr, BIT(key_pool->inp[i].pin));
+                gpio_init_callback(&key_pool_aux[key_pool_aux_inited_cnt].callback, key_pool_on_pin_isr,
+                                   BIT(key_pool->inp[i].pin));
                 key_pool_aux_inited_cnt++;
             }
         }
@@ -198,7 +201,42 @@ bool key_pool_init(struct key_pool_data * key_pool)
         key_pool_poll(key_pool, true);
     } while (0);
 
+    if (!result)
+    {
+        key_pool_deinit(key_pool);
+    }
+
     return result;
+}
+
+void key_pool_deinit(struct key_pool_data * key_pool)
+{
+    if (!key_pool || !key_pool->aux)
+    {
+        return;
+    }
+
+    struct key_pool_aux_data * key_pool_aux = (struct key_pool_aux_data *) key_pool->aux;
+
+    /* Disable all pin interrupts (safe even if some were never enabled) */
+    for (size_t i = 0; i < key_pool->inp_len; i++)
+    {
+        (void) gpio_pin_interrupt_configure_dt(&key_pool->inp[i], GPIO_INT_DISABLE);
+    }
+
+    /* Remove callbacks: skip entries with port == NULL (uninitialized via calloc) */
+    size_t port_num = key_pool_port_number(key_pool);
+    for (size_t i = 0; i < port_num; i++)
+    {
+        if (key_pool_aux[i].port)
+        {
+            (void) gpio_remove_callback(key_pool_aux[i].port, &key_pool_aux[i].callback);
+        }
+    }
+
+    /* Free auxiliary data */
+    free(key_pool_aux);
+    key_pool->aux = NULL;
 }
 
 void key_pool_set_callback(struct key_pool_data * key_pool, key_pool_on_button_change_t on_button_change, void * context)
