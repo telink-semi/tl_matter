@@ -258,7 +258,7 @@ if (CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RIS
             COMMAND
             cp ${PROJECT_BINARY_DIR}/zephyr.bin ${PROJECT_BINARY_DIR}/zephyr.matter.bin # store matter firmware
             COMMAND
-            dd if=/dev/zero bs=${BLOCK_SIZE} count=${ZB_FW_OFFSETZB_FW_OFFSET} | tr '\\000' '\\377' > ${PROJECT_BINARY_DIR}/dm_merged.bin
+            dd if=/dev/zero bs=${BLOCK_SIZE} count=${ZB_FW_OFFSET_DECIMAL} | tr '\\000' '\\377' > ${PROJECT_BINARY_DIR}/dm_merged.bin
             COMMAND
             dd if=${PROJECT_BINARY_DIR}/zephyr.matter.bin of=${PROJECT_BINARY_DIR}/dm_merged.bin conv=notrunc
             COMMAND
