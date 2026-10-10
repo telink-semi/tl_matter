@@ -160,8 +160,13 @@ private:
     uint32_t GetAdvertisingInterval();
 
     static void DriveBLEState(intptr_t arg);
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE)
+#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     static void HandleConcurrentModeReAdv(intptr_t arg);
+#endif
+#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+    /* k_work handler: runs in Zephyr sysworkq, port of the ot_ble_pm sample
+     * post_join_dwork_handler. */
+    static void HandleBleTeardownWork(struct k_work * work);
 #endif
 
     // Below callbacks run from the system workqueue context and have a limited stack capacity.

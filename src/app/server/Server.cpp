@@ -548,6 +548,12 @@ CHIP_ERROR Server::Init(const ServerInitParams & initParams)
         // do not auto-start advertising. The user can start it later (e.g. via button).
         // BLE_IDLE implies CONCURRENT_MODE, so this branch must come first.
         ChipLogProgress(AppServer, "Fabric already commissioned. BLE idle in concurrent mode");
+#elif defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+        // Concurrent mode, BLE off after commissioning: do not re-advertise on
+        // boot. The BLE manager tears the stack down once Thread attaches and
+        // advertising is not needed for commissioning anymore.
+        ChipLogProgress(AppServer, "Fabric already commissioned. BLE will be torn down after Thread attach");
+        TEMPORARY_RETURN_IGNORED DeviceLayer::ConnectivityMgr().SetBLEAdvertisingEnabled(false);
 #elif defined(CONFIG_CHIP_CONCURRENT_MODE)
         // Concurrent mode: keep BLE advertising enabled for Channel Sounding.
         ChipLogProgress(AppServer, "Fabric already commissioned. Enabling BLE advertisement for concurrent mode");
