@@ -25,6 +25,7 @@
 
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
+#include <platform/NetworkCommissioning.h>
 #include <platform/Zephyr/BLEAdvertisingArbiter.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
@@ -36,6 +37,13 @@ namespace DeviceLayer {
 namespace Internal {
 
 using namespace chip::Ble;
+
+#define CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION \
+    (CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION)
+
+#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+class InternalScanCallback;
+#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
 
 /**
  * Concrete implementation of the BLEManager singleton object for the Zephyr platforms.
@@ -143,6 +151,19 @@ private:
 
     friend BLEManager & BLEMgr(void);
     friend BLEManagerImpl & BLEMgrImpl(void);
+#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+    friend class InternalScanCallback;
+    InternalScanCallback * mInternalScanCallback = nullptr;
+
+    enum class PrescanState : uint8_t
+    {
+        kIdle,
+        kInProgress,
+        kCompleted,
+    };
+    PrescanState mPrescanState = PrescanState::kIdle;
+    bool mBLERadioInitialized  = false;
+#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
 
     static BLEManagerImpl sInstance;
 
@@ -155,11 +176,32 @@ public:
 #if CHIP_ENABLE_ADDITIONAL_DATA_ADVERTISING
     static ssize_t HandleC3Read(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len, uint16_t offset);
 #endif
+#if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
+    static ssize_t HandleChipIDRead(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len,
+                                    uint16_t offset);
+#endif
 #ifdef CONFIG_CHIP_CUSTOM_BLE_ADV_DATA
     void SetCustomAdvertising(Span<bt_data> CustomAdvertising);
     void SetCustomScanResponse(Span<bt_data> CustomScanResponse);
 #endif
 };
+
+#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+class InternalScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
+{
+public:
+    explicit InternalScanCallback(BLEManagerImpl * aBLEManagerImpl) { mBLEManagerImpl = aBLEManagerImpl; }
+    void OnFinished(NetworkCommissioning::Status err, CharSpan debugText,
+                    NetworkCommissioning::ThreadScanResponseIterator * networks)
+    {
+        mBLEManagerImpl->mPrescanState = BLEManagerImpl::PrescanState::kCompleted;
+        TEMPORARY_RETURN_IGNORED mBLEManagerImpl->StartAdvertising();
+    };
+
+private:
+    BLEManagerImpl * mBLEManagerImpl;
+};
+#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
 
 /**
  * Returns a reference to the public interface of the BLEManager singleton object.
