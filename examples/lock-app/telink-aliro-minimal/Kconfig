@@ -15,6 +15,13 @@
 #
 mainmenu "Matter Telink Lock Example Application"
 
+# Tercel's app-local partition map reserves factory data and Matter settings.
+config HAS_FLASH_LOAD_OFFSET
+    default y if SOC_RISCV_TELINK_TL721X
+
+config USE_DT_CODE_PARTITION
+    default y if SOC_RISCV_TELINK_TL721X
+
 config SETTINGS_NVS_NAME_CACHE
     default y
 
@@ -48,6 +55,8 @@ config ALIRO_TRANSPORT_BLE
     select BT_HOST_CRYPTO
     select BT_SMP
     select BT_L2CAP_DYNAMIC_CHANNEL
+    # BLE enables PSA crypto; Matter's CSR signing needs deterministic ECDSA.
+    select PSA_WANT_ALG_DETERMINISTIC_ECDSA
 config ALIRO_ONLY_BLE_FLOW_SUPP
     default y
 

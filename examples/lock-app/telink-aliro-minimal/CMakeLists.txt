@@ -66,6 +66,19 @@ include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
 project(chip-telink-lock-aliro-minimal-example)
 
+if(CONFIG_SOC_RISCV_TELINK_TL721X)
+  if(NOT CONFIG_FLASH_SIZE EQUAL 2048)
+    message(FATAL_ERROR "The Tercel application partition layout requires 2 MiB of flash")
+  endif()
+  if(CONFIG_BOOTLOADER_MCUBOOT OR CONFIG_CHIP_OTA_REQUESTOR OR
+     CONFIG_CHIP_DFU_OVER_BT_SMP OR CONFIG_TELINK_OTA_BUTTON_TEST)
+    message(FATAL_ERROR "The Tercel application uses a single-image flash layout; bootloader and OTA are not supported")
+  endif()
+  if(NOT CONFIG_USE_DT_CODE_PARTITION)
+    message(FATAL_ERROR "Enable CONFIG_USE_DT_CODE_PARTITION to protect Tercel's factory data and Matter settings")
+  endif()
+endif()
+
 if(NOT CONFIG_ALIRO_TRANSPORT_NFC AND NOT CONFIG_ALIRO_TRANSPORT_BLE)
   message(FATAL_ERROR "Enable at least one Aliro transport")
 endif()
