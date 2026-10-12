@@ -47,3 +47,33 @@
 		wakeup-gpios = <&gpioc 6 GPIO_ACTIVE_HIGH>;
 	};
 };
+
+/* one application image with OTA disabled, including SR150 firmware. */
+&flash {
+	/delete-node/ partitions;
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		slot0_partition: partition@0 {
+			label = "image-0";
+			reg = <0x0 0x1f1000>;
+		};
+
+		factory_partition: partition@1f1000 {
+			label = "factory-data";
+			reg = <0x1f1000 0x1000>;
+		};
+
+		storage_partition: partition@1f2000 {
+			label = "storage";
+			reg = <0x1f2000 0xc000>;
+		};
+
+		vendor_partition: partition@1fe000 {
+			label = "vendor-data";
+			reg = <0x1fe000 0x2000>;
+		};
+	};
+};

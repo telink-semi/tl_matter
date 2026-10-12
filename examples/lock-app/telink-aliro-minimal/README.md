@@ -15,6 +15,29 @@ Matter persistence. The Aliro SDK is linked as a library and uses the same
 Zephyr Bluetooth host as Matter; it does not initialize or own a second BLE
 stack.
 
+### Tercel/TL7218X UWB flash layout
+
+The app-local `boards/tl7218x.overlay` uses a single application image in
+2 MiB flash, with no bootloader or OTA slot. The embedded SR150 firmware makes
+the application too large for the former layout, whose settings region started
+at `0x101000`. Flashing that image overwrote settings and prevented Matter from
+starting.
+
+| Partition | Flash offset | Size |
+| --- | --- | --- |
+| Application | `0x000000` | `0x1F1000` |
+| Factory data | `0x1F1000` | `0x1000` |
+| Matter settings | `0x1F2000` | `0xC000` |
+| Vendor data | `0x1FE000` | `0x2000` |
+
+The linker uses the application partition boundary, so an oversized image fails
+the build instead of overwriting settings. Bootloader and OTA configurations
+are rejected for this layout. TL3238X keeps its existing layout.
+
+When switching to this layout, the old settings and factory-data locations are
+not migrated. Use a clean lab flash, regenerate/reflash factory data if used,
+and commission the accessory again. Preserve vendor data when erasing flash.
+
 ## Supported devices
 
 | Board/SoC | Build target | NFC frontend | Zephyr Board Info |
