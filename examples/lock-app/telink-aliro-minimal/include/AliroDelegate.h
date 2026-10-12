@@ -46,7 +46,7 @@ public:
                                     const chip::Optional<chip::ByteSpan> & groupResolvingKey) override;
     CHIP_ERROR ClearAliroReaderConfig() override;
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
     CHIP_ERROR InitializeCsaTestCredentials();
     bool IsCsaTestEndpointKey(const chip::ByteSpan & key) const;
 #endif

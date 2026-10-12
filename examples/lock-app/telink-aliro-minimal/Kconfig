@@ -21,41 +21,7 @@ config SETTINGS_NVS_NAME_CACHE
 config SETTINGS_NVS_NAME_CACHE_SIZE
     default 256
 
-menu "Aliro configuration"
-
-config ALIRO_TRANSPORT_NFC
-    bool "Enable Aliro NFC transport"
-    default y
-    select GPIO
-    select SPI
-
-config NFC_FRONTEND
-    bool
-    default ALIRO_TRANSPORT_NFC
-
-config ALIRO_TRANSPORT_BLE
-    bool "Enable Aliro BLE-only RKE transport"
-    default n if SOC_RISCV_TELINK_TL323X
-    default y if SOC_RISCV_TELINK_TL721X
-    select BT
-    select BT_PERIPHERAL
-    select BT_HOST_CRYPTO
-    select BT_SMP
-    select BT_L2CAP_DYNAMIC_CHANNEL
-    # Bluetooth enables PSA crypto; Matter's CSR signing uses deterministic ECDSA.
-    select PSA_WANT_ALG_DETERMINISTIC_ECDSA
-
-config ALIRO_ONLY_BLE_FLOW_SUPP
-    bool
-    default y
-    depends on ALIRO_TRANSPORT_BLE
-
-config ALIRO_BLE_UWB_FLOW_SUPP
-    bool
-    default n
-    depends on ALIRO_TRANSPORT_BLE
-
-config ALIRO_CSA_TEST_CREDENTIALS
+config CSA_TEST_CREDENTIALS
     bool "Lab only: preload the CSA BLE RKE test credentials"
     depends on ALIRO_TRANSPORT_BLE
     default n
@@ -66,44 +32,46 @@ config ALIRO_CSA_TEST_CREDENTIALS
       provisioning step. The fixed private key and endpoint authorization
       bypass are suitable only for controlled interoperability testing.
 
-config ALIRO_BT_POLLER_THREAD_STACK_SIZE
-    int "Aliro BLE transaction thread stack size"
-    depends on ALIRO_TRANSPORT_BLE
-    default 4096
+menu "Aliro configuration"
 
-config ALIRO_BT_POLLER_THREAD_PRIO
-    int "Aliro BLE transaction thread priority"
-    depends on ALIRO_TRANSPORT_BLE
-    default 5
+config ALIRO_TRANSPORT_NFC
+    default y
+    select GPIO
+    select SPI
+
+
+config ALIRO_TRANSPORT_BLE
+    default n if SOC_RISCV_TELINK_TL323X
+    default y if SOC_RISCV_TELINK_TL721X
+    select BT
+    select BT_PERIPHERAL
+    select BT_HOST_CRYPTO
+    select BT_SMP
+    select BT_L2CAP_DYNAMIC_CHANNEL
+config ALIRO_ONLY_BLE_FLOW_SUPP
+    default y
+
+config ALIRO_BLE_UWB_FLOW_SUPP
+    default y
 
 config ALIRO_NFC_POLLER_THREAD_STACK_SIZE
-    int "Aliro NFC poller thread stack size"
-    depends on ALIRO_TRANSPORT_NFC
     default 4096
 
 config ALIRO_LOG_LEVEL
-    int "Aliro protocol log level"
     range 0 4
     default 3
     help
       Keep protocol logging at informational level for normal builds. Level 4
       exposes ephemeral and derived transaction keys and is for controlled
       development only.
-
 config ALIRO_FAST_TRANSACTION
-    bool "Enable Aliro expedited transactions"
     default n
 
 config ALIRO_KEYSLOT_CREDENTIALS
-    bool "Enable Aliro endpoint key-slot credentials"
     default n
-
-config CLRC663_IC
-    bool
-    default y
-    depends on ALIRO_TRANSPORT_NFC
 
 endmenu
 
 rsource "../../../config/telink/chip-module/Kconfig.defaults"
-source "Kconfig.zephyr"
+
+source "$(TELINK_ALIRO_ROOT)/Kconfig"
