@@ -277,11 +277,11 @@ void dual_mode_auto_switch(int32_t op)
         flash_erase(flash_para_dev, DUAL_MODE_PARTITION_OFFSET, 4096);
         flash_write(flash_para_dev, DUAL_MODE_PARTITION_OFFSET, &boot_flag, sizeof(boot_flag));
     }
-    
+
     // need to reboot ,switch to bootloader
     if (op == OPCODE_SWITCH_ZIGBEE)
     {
-        // clear matter nvs for unclean info in matter nvs 
+        // clear matter nvs for unclean info in matter nvs
         flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
         sys_reboot(SYS_REBOOT_WARM);
     }
