@@ -240,7 +240,7 @@ CHIP_ERROR StartAliro()
 
 #if CONFIG_ALIRO_TRANSPORT_BLE
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
     ReturnErrorOnFailure(AliroDelegate::GetInstance().InitializeCsaTestCredentials());
 #endif
 
@@ -401,7 +401,7 @@ int AppTask::AuthorizeAliroEndpoint(const uint8_t * publicKey, size_t publicKeyS
         return -EINVAL;
     }
 
-#if defined(CONFIG_ALIRO_CSA_TEST_CREDENTIALS)
+#if defined(CONFIG_CSA_TEST_CREDENTIALS)
     if (AliroDelegate::GetInstance().IsCsaTestEndpointKey(chip::ByteSpan(publicKey, publicKeySize)))
     {
         LOG_WRN("CSA test endpoint accepted by test-credential authorization bypass");

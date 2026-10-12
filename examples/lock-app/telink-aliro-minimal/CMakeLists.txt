@@ -28,7 +28,8 @@ get_filename_component(GEN_DIR ${CHIP_ROOT}/zzz_generated/ REALPATH)
 
 set(TELINK_ALIRO_SDK_URL
     "https://doc.telink-semi.cn/Zephyr/binaries/public/aliro/telink-aliro-sdk-latest.tar.gz"
-    CACHE STRING "Telink Aliro SDK archive URL")
+    CACHE STRING "Telink Aliro SDK archive URL"
+)
 
 if(FETCHCONTENT_SOURCE_DIR_TELINK_ALIRO)
   FetchContent_Declare(telink_aliro
@@ -57,6 +58,8 @@ list(APPEND DTS_ROOT
   "${telink_aliro_SOURCE_DIR}/src/drivers/st25r/zephyr"
 )
 
+set(ENV{TELINK_ALIRO_ROOT} "${telink_aliro_SOURCE_DIR}")
+
 include(${TELINK_COMMON}/common.cmake)
 include(${CHIP_ROOT}/config/telink/app/enable-gnu-std.cmake)
 include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
@@ -79,50 +82,42 @@ if(CONFIG_ALIRO_TRANSPORT_BLE AND CONFIG_SOC_RISCV_TELINK_TLX AND NOT CONFIG_IEE
 endif()
 
 if(CONFIG_ALIRO_TRANSPORT_NFC OR CONFIG_ALIRO_TRANSPORT_BLE)
-  add_subdirectory("${telink_aliro_SOURCE_DIR}/cmake/zephyr" "${telink_aliro_BINARY_DIR}")
-
-  # Aliro SDK v1.2.0 was packaged with the BLE + UWB flow enabled,
-  # so its protocol archive references the UWB driver adapter even when the
-  # parent application selects BLE-only RKE.
-  if(CONFIG_ALIRO_TRANSPORT_BLE AND
-     NOT EXISTS "${telink_aliro_SOURCE_DIR}/src/aliro/protocol/aliro_transaction_control.c")
-    target_sources(app PRIVATE
-      "${telink_aliro_SOURCE_DIR}/src/drivers/uwb/uwb.c"
-    )
-    target_include_directories(app PRIVATE
-      "${telink_aliro_SOURCE_DIR}/src/aliro/protocol"
-    )
-  endif()
+  add_subdirectory(
+    "${telink_aliro_SOURCE_DIR}/cmake/zephyr"
+    "${telink_aliro_BINARY_DIR}"
+  )
 
   target_link_libraries(app PRIVATE Telink::Aliro)
 endif()
 
 target_include_directories(app PRIVATE
-                           include
-                           ${GEN_DIR}/app-common
-                           ${GEN_DIR}/lock-app
-                           ${TELINK_COMMON}/common/include
-                           ${TELINK_COMMON}/util/include
-                           ${TELINK_COMMON}/app/include
-                           ${TELINK_COMMON}/zephyr_ext)
+  include
+  ${GEN_DIR}/app-common
+  ${GEN_DIR}/lock-app
+  ${TELINK_COMMON}/common/include
+  ${TELINK_COMMON}/util/include
+  ${TELINK_COMMON}/app/include
+  ${TELINK_COMMON}/zephyr_ext
+)
 
 target_sources(app PRIVATE
-               src/AppTask.cpp
-               src/AliroDelegate.cpp
-               src/ZclCallbacks.cpp
-               src/LockManager.cpp
-               ${TELINK_COMMON}/common/src/mainCommon.cpp
-               ${TELINK_COMMON}/common/src/AppTaskCommon.cpp
-               ${TELINK_COMMON}/util/src/LEDManager.cpp
-               ${TELINK_COMMON}/util/src/ButtonManager.cpp
-               ${TELINK_COMMON}/util/src/ThreadUtil.cpp
-               ${TELINK_COMMON}/util/src/PWMManager.cpp
-               ${TELINK_COMMON}/zephyr_ext/zephyr_key_matrix.c
-               ${TELINK_COMMON}/zephyr_ext/zephyr_led_pool.c
-               ${TELINK_COMMON}/zephyr_ext/zephyr_pwm_pool.c)
+  src/AppTask.cpp
+  src/AliroDelegate.cpp
+  src/ZclCallbacks.cpp
+  src/LockManager.cpp
+  ${TELINK_COMMON}/common/src/mainCommon.cpp
+  ${TELINK_COMMON}/common/src/AppTaskCommon.cpp
+  ${TELINK_COMMON}/util/src/LEDManager.cpp
+  ${TELINK_COMMON}/util/src/ButtonManager.cpp
+  ${TELINK_COMMON}/util/src/ThreadUtil.cpp
+  ${TELINK_COMMON}/util/src/PWMManager.cpp
+  ${TELINK_COMMON}/zephyr_ext/zephyr_key_matrix.c
+  ${TELINK_COMMON}/zephyr_ext/zephyr_led_pool.c
+  ${TELINK_COMMON}/zephyr_ext/zephyr_pwm_pool.c
+)
 
 chip_configure_data_model(app
-    ZAP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lock-app-minimal.zap
+  ZAP_FILE ${CMAKE_CURRENT_SOURCE_DIR}/lock-app-minimal.zap
 )
 
 if(CONFIG_BOOTLOADER_MCUBOOT)
@@ -130,6 +125,6 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
 endif()
 
 if(CONFIG_MCUMGR_TRANSPORT_BT)
-    zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
-    target_sources(app PRIVATE ${TELINK_COMMON}/util/src/DFUOverSMP.cpp)
+  zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
+  target_sources(app PRIVATE ${TELINK_COMMON}/util/src/DFUOverSMP.cpp)
 endif()
