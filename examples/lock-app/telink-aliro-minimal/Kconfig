@@ -51,6 +51,8 @@ config ALIRO_TRANSPORT_BLE
     default n if SOC_RISCV_TELINK_TL323X
     default y if SOC_RISCV_TELINK_TL721X
     select BT
+    select GPIO
+    select SPI
     select BT_PERIPHERAL
     select BT_HOST_CRYPTO
     select BT_SMP
