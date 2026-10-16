@@ -28,16 +28,8 @@ config SETTINGS_NVS_NAME_CACHE
 config SETTINGS_NVS_NAME_CACHE_SIZE
     default 256
 
-config CSA_TEST_CREDENTIALS
-    bool "Lab only: preload the CSA BLE RKE test credentials"
-    depends on ALIRO_TRANSPORT_BLE
+config ALIRO_CSA_BLE_TEST_CREDENTIALS
     default n
-    help
-      Preload the public CSA Test Tool demo reader identity and group
-      identifiers, and authorize the matching demo endpoint. This makes the
-      BLE-only FFF2 advertiser available without a separate chip-tool Aliro
-      provisioning step. The fixed private key and endpoint authorization
-      bypass are suitable only for controlled interoperability testing.
 
 menu "Aliro configuration"
 
