@@ -46,11 +46,6 @@ public:
                                     const chip::Optional<chip::ByteSpan> & groupResolvingKey) override;
     CHIP_ERROR ClearAliroReaderConfig() override;
 
-#if defined(CONFIG_CSA_TEST_CREDENTIALS)
-    CHIP_ERROR InitializeCsaTestCredentials();
-    bool IsCsaTestEndpointKey(const chip::ByteSpan & key) const;
-#endif
-
     // Aliro credential storage - called from LockManager
     static bool IsAliroCredentialType(CredentialTypeEnum type);
     bool GetCredential(uint16_t index, CredentialTypeEnum type, EmberAfPluginDoorLockCredentialInfo & out);

@@ -227,49 +227,6 @@ int StopAliroAdvertising()
 
 #endif /* CONFIG_ALIRO_TRANSPORT_BLE */
 
-CHIP_ERROR StartAliro()
-{
-#if CONFIG_ALIRO_TRANSPORT_NFC
-    int err = telink_aliro_nfc_start();
-    if (err != 0 && err != -EALREADY)
-    {
-        LOG_ERR("Aliro NFC start failed: %d", err);
-        return CHIP_ERROR_INTERNAL;
-    }
-#endif
-
-#if CONFIG_ALIRO_TRANSPORT_BLE
-
-#if defined(CONFIG_CSA_TEST_CREDENTIALS)
-    ReturnErrorOnFailure(AliroDelegate::GetInstance().InitializeCsaTestCredentials());
-#endif
-
-    if (telink_aliro_ble_start() != 0)
-    {
-        LOG_ERR("Aliro BLE start failed");
-        return CHIP_ERROR_INTERNAL;
-    }
-#endif
-
-    return CHIP_NO_ERROR;
-}
-
-void MatterDeviceEventHandler(const ChipDeviceEvent * event, intptr_t arg)
-{
-    (void) arg;
-
-    if (event->Type != DeviceEventType::kCommissioningComplete)
-    {
-        return;
-    }
-
-    CHIP_ERROR err = StartAliro();
-    if (err != CHIP_NO_ERROR)
-    {
-        LOG_ERR("Failed to start Aliro: %" CHIP_ERROR_FORMAT, err.Format());
-    }
-}
-
 } // namespace
 
 CHIP_ERROR AppTask::Init(void)
@@ -315,14 +272,6 @@ CHIP_ERROR AppTask::Init(void)
         return CHIP_ERROR_INTERNAL;
     }
 #endif
-
-    ReturnErrorOnFailure(PlatformMgr().AddEventHandler(MatterDeviceEventHandler, 0));
-
-    if (Server::GetInstance().GetFabricTable().FabricCount())
-    {
-        /* Device is already commissioned, starting Aliro */
-        ReturnErrorOnFailure(StartAliro());
-    }
 
     return CHIP_NO_ERROR;
 }
@@ -400,14 +349,6 @@ int AppTask::AuthorizeAliroEndpoint(const uint8_t * publicKey, size_t publicKeyS
     {
         return -EINVAL;
     }
-
-#if defined(CONFIG_CSA_TEST_CREDENTIALS)
-    if (AliroDelegate::GetInstance().IsCsaTestEndpointKey(chip::ByteSpan(publicKey, publicKeySize)))
-    {
-        LOG_WRN("CSA test endpoint accepted by test-credential authorization bypass");
-        return 0;
-    }
-#endif
 
     chip::DeviceLayer::PlatformMgr().LockChipStack();
     const bool authorized = LockMgr().ValidateAliroEndpointKey(chip::ByteSpan(publicKey, publicKeySize));
