@@ -1,5 +1,5 @@
 #
-#   Copyright (c) 2022-2024 Project CHIP Authors
+#   Copyright (c) 2022-2026 Project CHIP Authors
 #
 #   Licensed under the Apache License, Version 2.0 (the "License");
 #   you may not use this file except in compliance with the License.
@@ -199,8 +199,16 @@ endif()
 
 set(BLOCK_SIZE "1024")
 
+# Dual-mode packaging is option; the default is a Matter-only build.
+set(TELINK_DUAL_MODE_ENABLED OFF)
+if(CONFIG_SOC_RISCV_TELINK_TL323X AND DEFINED CONFIG_DUAL_MODE AND CONFIG_DUAL_MODE GREATER 0)
+    set(TELINK_DUAL_MODE_ENABLED ON)
+endif()
+
 if(CONFIG_SOC_RISCV_TELINK_TL323X)
 set(SOC "TL323X")
+
+if(TELINK_DUAL_MODE_ENABLED)
 
 # Calculate the offset of zigbee partition relative to slot0 start
 dt_nodelabel(slot0_partition_path NODELABEL "slot0_partition")
@@ -219,6 +227,11 @@ math(EXPR ZB_FW_OFFSET_DECIMAL "${zb_offset_bytes} / ${BLOCK_SIZE}" OUTPUT_FORMA
 message(STATUS "ZB_FW_OFFSET_DECIMAL: ${ZB_FW_OFFSET_DECIMAL}")
 
 set(ZB_FILE_PATH "${ZEPHYR_BASE}/${SOC}_FW/ZB/Zigbee-SampleDemo.bin")
+if(NOT EXISTS "${ZB_FILE_PATH}")
+    message(FATAL_ERROR "Dual-mode Zigbee firmware not found: ${ZB_FILE_PATH}")
+endif()
+endif()
+
 
 set(SBOOT_FILE_PATH "${ZEPHYR_BASE}/${SOC}_FW/SBOOT/Secure_Bootloader.bin")
 math(EXPR SKIP_BYTES_DECIMAL "${CONFIG_MCUBOOT_START_OFFSET} / ${BLOCK_SIZE}" OUTPUT_FORMAT DECIMAL)
@@ -231,7 +244,7 @@ add_custom_target(
     COMMAND ${Python3_EXECUTABLE} ${CHIP_ROOT}/scripts/tools/telink/process_binaries.py
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
 )
-if(EXISTS ${ZB_FILE_PATH} AND CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RISCV_TELINK_TLX))
+if(TELINK_DUAL_MODE_ENABLED AND CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RISCV_TELINK_TLX))
     add_dependencies(process_binaries west_sign)
 else()
     add_dependencies(process_binaries ${ZEPHYR_FINAL_EXECUTABLE})
@@ -242,6 +255,8 @@ endif()
 # ==============================================================================
 
 if (CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RISCV_TELINK_TLX))
+
+if(CONFIG_SOC_RISCV_TELINK_TL323X)
     add_custom_target(build_mcuboot ALL
         COMMAND
         west build -b ${BASE_BOARD} -d build_mcuboot ${ZEPHYR_BASE}/../bootloader/mcuboot/boot/zephyr
@@ -277,7 +292,7 @@ if (CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RIS
     endif()
     add_dependencies(merge_sboot build_mcuboot)
 
-    if (EXISTS ${ZB_FILE_PATH})
+    if (TELINK_DUAL_MODE_ENABLED)
         add_custom_target(merge_zigbee ALL
             COMMAND
             cp ${PROJECT_BINARY_DIR}/zephyr.bin ${PROJECT_BINARY_DIR}/zephyr.matter.bin # store matter firmware
@@ -298,9 +313,23 @@ if (CONFIG_BOOTLOADER_MCUBOOT AND (CONFIG_SOC_RISCV_TELINK_B9X OR CONFIG_SOC_RIS
         )
         add_dependencies(merge_zigbee ${ZEPHYR_FINAL_EXECUTABLE})
         add_dependencies(west_sign merge_zigbee)
-    else()
-        message(WARNING "File ${ZB_FILE_PATH} does not exist. merge_zigbee target will not be created.")
     endif()
+else()
+    add_custom_target(build_mcuboot ALL
+        COMMAND
+        west build -b ${BASE_BOARD} -d build_mcuboot ${ZEPHYR_BASE}/../bootloader/mcuboot/boot/zephyr
+            -- -DOVERLAY_CONFIG=${GLOBAL_BOOT_CONF_OVERLAY_FILE} -DDTC_OVERLAY_FILE="${GLOBAL_BOOT_DTC_OVERLAY_FILE};${FLASH_DTC_OVERLAY_FILE};${USB_BOOT_DTC_OVERLAY_FILE};${MARS_BOOT_DTC_OVERLAY_FILE}"
+        COMMAND
+        cp ${PROJECT_BINARY_DIR}/../modules/chip-module/build_mcuboot/zephyr/zephyr.bin ${PROJECT_BINARY_DIR}/mcuboot.bin
+    )
+endif()
+endif()
+
+# process_binaries consumes mcuboot.bin; wait for its generation.
+if(TARGET merge_sboot)
+    add_dependencies(process_binaries merge_sboot)
+elseif(TARGET build_mcuboot)
+    add_dependencies(process_binaries build_mcuboot)
 endif()
 
 # ==============================================================================

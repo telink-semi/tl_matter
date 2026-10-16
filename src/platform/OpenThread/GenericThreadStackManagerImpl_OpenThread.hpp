@@ -72,10 +72,6 @@ extern "C" void otSysProcessDrivers(otInstance * aInstance);
 extern "C" void otAppCliInit(otInstance * aInstance);
 #endif
 
-#if defined CONFIG_IEEE802154_TLX_OPTIMIZATION
-bool isThreadCommissioned = false;
-#endif /* CONFIG_IEEE802154_TLX_OPTIMIZATION */
-
 namespace chip {
 namespace DeviceLayer {
 namespace Internal {
@@ -377,15 +373,6 @@ bool GenericThreadStackManagerImpl_OpenThread<ImplClass>::_IsThreadAttached()
     Impl()->LockThreadStack();
     curRole = otThreadGetDeviceRole(mOTInst);
     Impl()->UnlockThreadStack();
-
-#if defined CONFIG_IEEE802154_TLX_OPTIMIZATION
-
-    if ((curRole != OT_DEVICE_ROLE_DISABLED && curRole != OT_DEVICE_ROLE_DETACHED))
-    {
-        if (isThreadCommissioned == false)
-            isThreadCommissioned = true;
-    }
-#endif /* CONFIG_IEEE802154_TLX_OPTIMIZATION */
 
     return (curRole != OT_DEVICE_ROLE_DISABLED && curRole != OT_DEVICE_ROLE_DETACHED);
 }
@@ -1006,7 +993,7 @@ void GenericThreadStackManagerImpl_OpenThread<ImplClass>::TryNextNetwork()
         }
 
 #else
-        auto err      = MapOpenThreadError(otSeekerStart(mOTInst, _HandleSeekerScanEvaluator, this));
+        auto err = MapOpenThreadError(otSeekerStart(mOTInst, _HandleSeekerScanEvaluator, this));
 
         ChipLogProgress(DeviceLayer, "Thread Discovery restarted, no delay: %s", chip::ErrorStr(err));
 #endif

@@ -279,8 +279,8 @@ class TelinkBuilder(Builder):
         if self.tflm_config:
             flags.append("-DCONFIG_TFLM_FEATURE=y")
 
-        if self.dual_mode_config:
-            flags.append("-DCONFIG_DUAL_MODE=0")
+        if self.dual_mode_config != 0:
+            flags.append(f"-DCONFIG_DUAL_MODE={self.dual_mode_config}")
 
         if self.options.pregen_dir:
             flags.append(f"-DCHIP_CODEGEN_PREGEN_DIR={shlex.quote(self.options.pregen_dir)}")
