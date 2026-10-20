@@ -165,13 +165,26 @@ constexpr int kCHIPoBLE_CCC_AttributeIndex = 3;
 
 // Restart a connectable advertisement after BLE has been re-enabled following
 // the post-commissioning teardown. Mirrors the ot_ble_pm sample's
-// bt_le_adv_restart()/bt_ready(): the name is carried in an explicit scan
-// response and the identity is created automatically by bt_enable()'s
-// bt_id_init() (public MAC via READ_BD_ADDR with TL_BLE_CTRL_MAC_TYPE_PUBLIC).
+// bt_le_adv_restart()/bt_ready(): the name is carried in the scan response and
+// the identity is created automatically by bt_enable()'s bt_id_init() (public
+// MAC via READ_BD_ADDR with TL_BLE_CTRL_MAC_TYPE_PUBLIC).
+//
+// Do not build these entries with BT_DATA_BYTES(): that macro points at a
+// compound literal (uint8_t[]){...}, and in C++ the compiler either rejects the
+// "address of temporary array" or silently emits an all-zero array. The latter
+// leaves the on-air payload without a Flags AD, and strict peers such as iOS
+// then treat the advertisement as non-connectable. Use explicit static arrays
+// with BT_DATA, like the CHIPoBLE advertising path does.
 static void RestartBleAdvertising(void)
 {
+    static const uint8_t advUuids[] = {
+        BT_UUID_16_ENCODE(BT_UUID_HTS_VAL),
+        BT_UUID_16_ENCODE(BT_UUID_DIS_VAL),
+        BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
+    };
     static const struct bt_data ad[] = {
-        BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
+        BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
+        BT_DATA(BT_DATA_UUID16_ALL, advUuids, sizeof(advUuids)),
     };
     static const struct bt_data sd[] = {
         BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
@@ -228,7 +241,7 @@ CHIP_ERROR BLEManagerImpl::_Init(void)
     // StartAdvertisingProcess().
     {
         static const struct bt_data minimal_ad[] = {
-            BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
+            BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
         };
         const struct bt_le_adv_param params =
             BT_LE_ADV_PARAM_INIT(BT_LE_ADV_OPT_CONN, BT_GAP_ADV_FAST_INT_MIN_1, BT_GAP_ADV_FAST_INT_MAX_1, NULL);
