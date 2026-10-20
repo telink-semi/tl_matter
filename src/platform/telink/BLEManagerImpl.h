@@ -196,6 +196,15 @@ public:
     bool NeedToResetFailSafeTimer(void);
     void ClearResetFailSafeTimerFlag(void);
 
+#if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+    /* Re-enable BLE after the post-commissioning teardown: restores the
+     * BLE/802.15.4 RF time-sharing, re-initializes the BLE stack and starts
+     * a connectable advertisement. Returns false if BLE has not been torn
+     * down yet or the resume failed. Must run in application task context
+     * (blocking). Port of the ot_ble_pm sample ble_enable(). */
+    bool ResumeBleAfterTeardown(void);
+#endif
+
 #if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
     static ssize_t HandleChipIDRead(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len,
                                     uint16_t offset);

@@ -69,8 +69,16 @@ extern __attribute__((noinline)) int tlx_bt_blc_mac_init(uint8_t * bt_mac);
 extern __attribute__((noinline)) void tlx_bt_802154_dual_mode_start();
 #if defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 extern void tlx_bt_802154_dual_mode_disable(void);
-extern void tlx_bt_802154_post_join(void);
+extern void tlx_bt_802154_dual_mode_suspend(void);
 extern volatile bool tlx_rf_802154_mode; /* true = RF owned by 802.15.4 */
+#endif
+#if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+/* hal_telink reversible BLE/802.15.4 RF handover (requires a hal_telink
+ * revision with tlx_bt_802154_dual_mode_resume() support). */
+extern void tlx_bt_802154_dual_mode_resume(void);
+extern void tlx_bt_802154_dual_mode_suspend(void);
+/* BLE SDK thread insert task control (restores RF time-sharing on resume). */
+extern void tlksdk_thd_enableInsertTask1(int enable);
 #endif
 #elif defined(CONFIG_BT_W91)
 extern __attribute__((noinline)) void telink_bt_blc_mac_init(uint8_t * bt_mac);
@@ -155,37 +163,25 @@ bt_gatt_service sChipoBleService = BT_GATT_SERVICE(sChipoBleAttributes);
 // This value should be adjusted accordingly if the service declaration changes.
 constexpr int kCHIPoBLE_CCC_AttributeIndex = 3;
 
-CHIP_ERROR InitBLEMACAddress()
+// Restart a connectable advertisement after BLE has been re-enabled following
+// the post-commissioning teardown. Mirrors the ot_ble_pm sample's
+// bt_le_adv_restart()/bt_ready(): the name is carried in an explicit scan
+// response and the identity is created automatically by bt_enable()'s
+// bt_id_init() (public MAC via READ_BD_ADDR with TL_BLE_CTRL_MAC_TYPE_PUBLIC).
+static void RestartBleAdvertising(void)
 {
-    // By default the BLE public address will be applied. In case if previously generated random address doesn't exist
-    // or public address doesn't exist, the new random static address will be generated and written to flash
-    int error = 0;
-    bt_addr_le_t addr;
+    static const struct bt_data ad[] = {
+        BT_DATA_BYTES(BT_DATA_FLAGS, BT_LE_AD_GENERAL | BT_LE_AD_NO_BREDR),
+    };
+    static const struct bt_data sd[] = {
+        BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
+    };
 
-#if defined(CONFIG_BT_B9X)
-    b9x_bt_blc_mac_init(addr.a.val);
-#elif defined(CONFIG_BT_TLX)
-    tlx_bt_blc_mac_init(addr.a.val);
-#elif defined(CONFIG_BT_W91)
-    telink_bt_blc_mac_init(addr.a.val);
-#endif
-
-    if (BT_ADDR_IS_STATIC(&addr.a)) // in case of Random static address, create a new id
+    int err = bt_le_adv_start(BT_LE_ADV_CONN_FAST_1, ad, ARRAY_SIZE(ad), sd, ARRAY_SIZE(sd));
+    if (err)
     {
-        addr.type = BT_ADDR_LE_RANDOM;
-
-        error = bt_id_create(&addr, nullptr);
-
-        if (error < 0)
-        {
-            ChipLogError(DeviceLayer, "Failed to create BLE identity: %d", error);
-            return System::MapErrorZephyr(error);
-        }
+        ChipLogError(DeviceLayer, "Failed to start BLE advertisement: %d", err);
     }
-
-    ChipLogProgress(DeviceLayer, "BLE address: %02X:%02X:%02X:%02X:%02X:%02X", addr.a.val[5], addr.a.val[4], addr.a.val[3],
-                    addr.a.val[2], addr.a.val[1], addr.a.val[0]);
-    return CHIP_NO_ERROR;
 }
 
 } // unnamed namespace
@@ -213,8 +209,6 @@ CHIP_ERROR BLEManagerImpl::_Init(void)
     mGAPConns = 0;
 
     memset(mSubscribedConns, 0, sizeof(mSubscribedConns));
-
-    ReturnErrorOnFailure(InitBLEMACAddress());
 
 #ifdef CONFIG_CHIP_CONCURRENT_MODE
     // Concurrent mode: BLE and Thread can coexist, init BLE stack immediately.
@@ -364,12 +358,62 @@ void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
     }
 
     /* RF is now reset by the controller deinit: restore it for 802.15.4 and
-     * latch permanent ownership (one-way). */
-    tlx_bt_802154_post_join();
+     * latch permanent ownership. In the BLE-off policy this is one-way; in the
+     * resume policy ResumeBleAfterTeardown() can hand the RF back later. */
+    tlx_bt_802154_dual_mode_suspend();
 
     sInstance.mBLERadioInitialized = false;
     sBleTeardownDone               = true;
     ChipLogProgress(DeviceLayer, "Post-commissioning teardown done: RF owned by 802.15.4, BLE fully stopped");
+}
+#endif
+
+#if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+bool BLEManagerImpl::ResumeBleAfterTeardown(void)
+{
+    /* Nothing to resume: teardown has not run yet (BLE still up). */
+    if (!sBleTeardownDone)
+    {
+        return false;
+    }
+
+    ChipLogProgress(DeviceLayer, "Resuming BLE after post-commissioning teardown");
+
+    /* 1. Revert the 802.15.4 ownership and park the RF back to BLE mode. */
+    tlx_bt_802154_dual_mode_resume();
+
+    /* 2. Re-init BLE host + controller. bt_enable()'s bt_id_init() creates the
+     *    identity automatically (public MAC via READ_BD_ADDR, matching the
+     *    ot_ble_pm sample with TL_BLE_CTRL_MAC_TYPE_PUBLIC).
+     *    hci_tlx_open -> tlx_bt_controller_init()
+     *      -> rf_radio_reset() + rf_drv_ble_init()   (RF back to BLE)
+     *      -> tlx_bt_802154_dual_mode_enable()       (re-register mode-change/ISR callbacks)
+     *      -> tlx_bt_irq_init()                      (reconnect IRQ_ZB_RT to rf_irq_handler) */
+    int err = bt_enable(NULL);
+    if (err)
+    {
+        ChipLogError(DeviceLayer, "bt_enable failed (%d), rollback to 802.15.4", err);
+        tlx_bt_802154_dual_mode_suspend();
+        return false;
+    }
+
+    /* Reload bonded keys (bt_disable() clears them via bt_keys_reset). */
+    if (IS_ENABLED(CONFIG_SETTINGS))
+    {
+        settings_load();
+    }
+
+    /* 3. Restart advertising (mirrors ot_ble_pm's bt_le_adv_restart()). */
+    RestartBleAdvertising();
+
+    /* 4. Restore the BLE/802.15.4 insert-task time-sharing: 802.15.4 runs
+     *    in the BLE scheduler again, Thread keeps running alongside BLE. */
+    tlksdk_thd_enableInsertTask1(0x01);
+
+    mBLERadioInitialized = true;
+    sBleTeardownDone     = false;
+    ChipLogProgress(DeviceLayer, "BLE resumed: Thread + BLE coexist");
+    return true;
 }
 #endif
 

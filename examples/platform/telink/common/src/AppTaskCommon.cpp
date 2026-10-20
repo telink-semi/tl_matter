@@ -890,6 +890,18 @@ void AppTaskCommon::ToggleBleAdvHandler(AppEvent * aEvent)
             ConnectivityMgr().SetBLEAdvertisingEnabled(true);
         }
 #endif
+#if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+        // Post-commissioning teardown mode: the BLE stack was fully disabled
+        // after commissioning for lowest power. Button press re-enables the
+        // BLE stack and starts a connectable advertisement (e.g. OTA
+        // transport); Thread keeps running and Matter commissioning data
+        // is untouched. Stopping BLE again is left to the application.
+        if (Internal::BLEMgrImpl().ResumeBleAfterTeardown())
+        {
+            return;
+        }
+        LOG_INF("BLE not resumed (still running or resume failed)");
+#endif
         return;
     }
 
