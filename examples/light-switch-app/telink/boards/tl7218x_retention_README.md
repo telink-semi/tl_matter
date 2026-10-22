@@ -101,3 +101,32 @@ partition limit.
 
 **Important Note**: TL7218X does NOT support dual_mode (Matter + Zigbee)
 configuration.
+
+## 4. Low Power: Fully Disable BLE After Commissioning (Concurrent Mode)
+
+**Kconfig:** `boards/tl7218x_retention_ble_off.conf` (add to CONF_FILE)
+
+-   `CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING=y`
+
+**Note**: After Matter commissioning completes (or on reboot of an already
+commissioned device), the BLE stack is torn down entirely and the RF is handed
+permanently to 802.15.4, so the device reaches its lowest power state. This is
+one-way: BLE can only be re-enabled by a factory reset + reboot to
+re-commission.
+
+**Build**:
+
+```bash
+cd ~/connectedhomeip/examples/light-switch-app/telink
+west build -p -b tl7218x_retention \
+  -d ~/connectedhomeip/examples/light-switch-app/telink/build_tl7218x_retention_concurrent_off \
+  ~/connectedhomeip/examples/light-switch-app/telink -- \
+  -DCONF_FILE="prj.conf boards/tl7218x_retention_concurrent.conf boards/tl7218x_retention_ble_off.conf" \
+  > build_tl7218x_retention_concurrent_off.log
+```
+
+**Output**:
+
+```bash
+build_tl7218x_retention_concurrent_off/zephyr/merged.bin -> flash this
+```
