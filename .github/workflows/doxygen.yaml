@@ -83,8 +83,6 @@ jobs:
         name: Build Doxygen
 
         runs-on: ubuntu-latest
-        container:
-            image: ghcr.io/project-chip/chip-build-doxygen:200
 
         if: github.actor != 'restyled-io[bot]'
 

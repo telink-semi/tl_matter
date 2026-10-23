@@ -38,9 +38,6 @@ namespace Internal {
 
 using namespace chip::Ble;
 
-#define CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION \
-    (CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION)
-
 /**
  * Concrete implementation of the BLEManager singleton object for the Zephyr platforms.
  */
@@ -147,7 +144,7 @@ private:
 
     friend BLEManager & BLEMgr(void);
     friend BLEManagerImpl & BLEMgrImpl(void);
-#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
     friend class InitScanCallback;
     bool mBLERadioInitialized = false;
 
@@ -158,7 +155,7 @@ private:
         kCompleted,
     };
     PrescanState mPrescanState = PrescanState::kIdle;
-#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
 
     static BLEManagerImpl sInstance;
 
@@ -183,7 +180,7 @@ public:
 #endif
 };
 
-#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
 class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
 {
 public:
@@ -191,11 +188,17 @@ public:
                     NetworkCommissioning::ThreadScanResponseIterator * networks) override
     {
         BLEManagerImpl & mBLEManagerImpl = BLEMgrImpl();
+        if (mBLEManagerImpl.mPrescanState != BLEManagerImpl::PrescanState::kInProgress ||
+            !mBLEManagerImpl._IsAdvertisingEnabled() ||
+            mBLEManagerImpl.mServiceMode != ConnectivityManager::kCHIPoBLEServiceMode_Enabled)
+        {
+            return;
+        }
         mBLEManagerImpl.mPrescanState = BLEManagerImpl::PrescanState::kCompleted;
         TEMPORARY_RETURN_IGNORED mBLEManagerImpl.StartAdvertising();
     };
 };
-#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
 
 /**
  * Returns a reference to the public interface of the BLEManager singleton object.

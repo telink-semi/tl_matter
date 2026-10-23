@@ -24,10 +24,6 @@
 #ifdef CONFIG_CHIP_WIFI
 #include "WiFiManager.h"
 #endif
-
-#include <zephyr/drivers/flash.h>
-#include <zephyr/storage/flash_map.h>
-
 class AppFabricTableDelegate : public chip::FabricTable::Delegate
 {
 public:
@@ -48,8 +44,7 @@ private:
 
         if (server.GetFabricTable().FabricCount() == 0)
         {
-            extern void DofactoryResetDualMode();
-            DofactoryResetDualMode();
+            AppTaskCommon::ResetDualModeState();
             ChipLogProgress(DeviceLayer, "Do factory_reset and reboot");
 
             // ScheduleFactoryReset in case of failed commissioning
@@ -117,7 +112,7 @@ private:
                 LogErrorOnFailure(chip::DeviceLayer::WiFiManager::Instance().Disconnect());
                 chip::DeviceLayer::ConnectivityMgr().ClearWiFiStationProvision();
 #endif
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
                 LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false));
                 LogErrorOnFailure(chip::DeviceLayer::PlatformMgr().ScheduleWork(StartThreadPrescan, 0));
 #else
@@ -139,8 +134,7 @@ private:
 
     inline static k_timer sFabricRemovedTimer;
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION &&                                      \
-    CONFIG_CHIP_LAST_FABRIC_REMOVED_ERASE_AND_PAIRING_START
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD && CONFIG_CHIP_LAST_FABRIC_REMOVED_ERASE_AND_PAIRING_START
     class PairingScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
     {
     public:

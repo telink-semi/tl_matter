@@ -177,9 +177,9 @@ jobs:
               uses: ./.github/actions/checkout-submodules-and-bootstrap
               with:
                 platform: telink
-            # - name: Update Zephyr to specific revision (for developers purpose)
-            #   shell: bash
-            #   run: scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py 1f4804a19fe7ba792bfc315948043d5515e74cd2"
+            - name: Update Zephyr to specific revision (for developers purpose)
+              shell: bash
+              run: scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py 6b7e149ec7606b8591eddaf1d7a2be409c897e9e"
             - name: CI Examples Telink
               shell: bash
               run: |

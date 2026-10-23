@@ -74,6 +74,12 @@ bool AppTaskCommon::sIsCommissioningFailed = false;
 #include <zephyr/pm/policy.h>
 #endif
 
+#if defined(CONFIG_IEEE802154_TLX_OPTIMIZATION)
+extern "C" {
+bool isThreadCommissioned = false;
+}
+#endif // CONFIG_IEEE802154_TLX_OPTIMIZATION
+
 using namespace chip::app;
 
 LOG_MODULE_DECLARE(app, CONFIG_CHIP_APP_LOG_LEVEL);
@@ -109,7 +115,7 @@ bool sHaveBLEConnections   = false;
  * @brief Set deferred attributes storage
  *
  * @see Define a custom attribute persister which makes actual write of the CurrentHue, CurrentSaturation, CurrentLevel attributes
- * value to the non-volatile storage only when it has remained constant for 5 seconds. This is to reduce the flash wearout when the
+ * value to the non-volatile storage only when it has remained constant for 500 ms. This is to reduce the flash wearout when the
  * attribute changes frequently as a result of MoveToLevel command. DeferredAttribute object describes a deferred attribute, but
  * also holds a buffer with a value to be written, so it must live so long as the DeferredAttributePersistenceProvider object.
  *
@@ -117,18 +123,21 @@ bool sHaveBLEConnections   = false;
  * @param DEFERRED_STORAGE_TIME The deferred time(ms) to store attributes
  */
 
+DefaultAttributePersistenceProvider gSimpleAttributePersistence;
+
+#if CONFIG_DEFERRED_ATTR_STORAGE
+
 #define ATTRIBUTES_ARRAY_SIZE (3U)
 #define DEFERRED_STORAGE_TIME (500U)
 
 DeferredAttribute gPersisters[] = {
-#if CONFIG_DEFERRED_ATTR_STORAGE
+
     DeferredAttribute(
         ConcreteAttributePath(kExampleEndpointId, Clusters::ColorControl::Id, Clusters::ColorControl::Attributes::CurrentHue::Id)),
     DeferredAttribute(ConcreteAttributePath(kExampleEndpointId, Clusters::ColorControl::Id,
                                             Clusters::ColorControl::Attributes::CurrentSaturation::Id)),
     DeferredAttribute(
         ConcreteAttributePath(kExampleEndpointId, Clusters::LevelControl::Id, Clusters::LevelControl::Attributes::CurrentLevel::Id))
-#endif // CONFIG_DEFERRED_ATTR_STORAGE
 };
 
 // Deferred persistence will be auto-initialized as soon as the default persistence is initialized
@@ -137,7 +146,8 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
                                                                  Span<DeferredAttribute>(gPersisters, ATTRIBUTES_ARRAY_SIZE),
                                                                  System::Clock::Milliseconds32(DEFERRED_STORAGE_TIME));
 
-#include <ext_driver/ext_pm.h>
+#endif // CONFIG_DEFERRED_ATTR_STORAGE
+
 #include <zephyr/device.h>
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
@@ -146,10 +156,11 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(MATTER_NVS_PARTITION)
 #define MATTER_NVS_PARTITION_OFFSET FIXED_PARTITION_OFFSET(MATTER_NVS_PARTITION)
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
-const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
+const struct device * matter_nvs_dev = MATTER_NVS_PARTITION_DEVICE;
 
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
 
+#include <ext_driver/ext_pm.h>
 
 #define OPCODE_FACTORY_RESET 0
 #define OPCODE_SWITCH_ZIGBEE 1 // include init state and matter paired state.
@@ -207,12 +218,11 @@ void dual_mode_switch(int32_t op)
 
 #elif CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
 
-//#include <app-common/zap-generated/attributes/Accessors.h>
-
 #define USER_MATTER_BACK_ZB 0xa0 // only commisiion fail will back to zb
 #define USER_ZB_SW_VAL 0xaa
 
-typedef struct{
+typedef struct
+{
     uint8_t val;
     uint8_t on_net;
 } user_para_t;
@@ -226,12 +236,10 @@ user_para_t user_para;
 #define ZB_NVS_PARTITION_DEVICE FIXED_PARTITION_DEVICE(ZB_NVS_PARTITION)
 #define ZB_NVS_START_ADR FIXED_PARTITION_OFFSET(ZB_NVS_PARTITION)
 
-
 const struct device * flash_para_dev = DUAL_MODE_PARTITION_DEVICE;
 const struct device * zb_para_dev    = ZB_NVS_PARTITION_DEVICE;
 
-
-constexpr int kDnssTimeout           = 60000;
+constexpr int kDnssTimeout = 60000;
 #if !CONFIG_MCUMGR_TRANSPORT_BT
 static k_timer sDnssTimer; // create when dfu disable
 #endif /* !CONFIG_MCUMGR_TRANSPORT_BT */
@@ -247,16 +255,19 @@ void FactoryResetExtHandler(void)
 uint8_t dual_mode_switch_from_zb()
 {
     flash_read(flash_para_dev, DUAL_MODE_PARTITION_OFFSET, &user_para, sizeof(user_para));
-    if (user_para.val == USER_ZB_SW_VAL){
+    if (user_para.val == USER_ZB_SW_VAL)
+    {
         return 1;
-    }else{
+    }
+    else
+    {
         return 0;
     }
 }
 
 void dual_mode_auto_switch(int32_t op)
 {
-    uint8_t boot_flag = 0xff;
+    uint8_t boot_flag                    = 0xff;
     const struct device * flash_para_dev = DUAL_MODE_PARTITION_DEVICE;
 
     flash_read(flash_para_dev, DUAL_MODE_PARTITION_OFFSET, &boot_flag, 1);
@@ -337,7 +348,7 @@ public:
 AppCallbacks sCallbacks;
 } // namespace
 
-void DofactoryResetDualMode()
+void AppTaskCommon::ResetDualModeState()
 {
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE
     dual_mode_switch(OPCODE_FACTORY_RESET);
@@ -346,7 +357,7 @@ void DofactoryResetDualMode()
 #endif
 }
 
-
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD
 static void DoDelayedFactoryReset(struct k_work * work)
 {
     ChipLogProgress(DeviceLayer, "Erasing settings partition");
@@ -380,18 +391,14 @@ static void DoDelayedFactoryReset(struct k_work * work)
     }
     else
     {
-        #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE
-        dual_mode_switch(OPCODE_FACTORY_RESET);
-        #elif CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
-        dual_mode_auto_switch(OPCODE_FACTORY_RESET);
-        #endif
+        AppTaskCommon::ResetDualModeState();
         ChipLogProgress(DeviceLayer, "Do factory_reset and reboot");
         chip::Server::GetInstance().ScheduleFactoryReset();
     }
 }
 
 static k_work_delayable sDelayedFactoryResetWork = Z_WORK_DELAYABLE_INITIALIZER(DoDelayedFactoryReset);
-
+#endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD
 
 class PlatformMgrDelegate : public DeviceLayer::PlatformManagerDelegate
 {
@@ -458,18 +465,25 @@ void AppTaskCommon::DnssTimerTimeoutCallback(k_timer * timer)
 static void PowerOnNetworkCheck(void)
 {
     Thread::OperationalDataset curDataset;
-    CHIP_ERROR err = DeviceLayer::ThreadStackMgrImpl().GetThreadProvision(curDataset);
+    CHIP_ERROR err  = DeviceLayer::ThreadStackMgrImpl().GetThreadProvision(curDataset);
     bool hasDataset = (err == CHIP_NO_ERROR); // Check if stored OpenThread dataset
 
     uint8_t fabricNum = chip::Server::GetInstance().GetFabricTable().FabricCount();
 
-    if (!hasDataset && fabricNum == 0) { // New device
+    if (!hasDataset && fabricNum == 0)
+    { // New device
         return;
-    } else if (hasDataset && fabricNum > 0) { // Device successfully commissioned
+    }
+    else if (hasDataset && fabricNum > 0)
+    { // Device successfully commissioned
         return;
-    } else if (hasDataset && fabricNum == 0) {
+    }
+    else if (hasDataset && fabricNum == 0)
+    {
         ChipLogProgress(DeviceLayer, "Thread dataset exists, but matter uncommissioned\n");
-    } else {
+    }
+    else
+    {
         return;
     }
     k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
@@ -487,7 +501,8 @@ CHIP_ERROR AppTaskCommon::StartApp(void)
     }
 
 #if CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
-    if(dual_mode_switch_from_zb()){
+    if (dual_mode_switch_from_zb())
+    {
         sBoot_zb = 1;
         k_timer_init(&sDnssTimer, &DnssTimerTimeoutCallback, nullptr);
         k_timer_start(&sDnssTimer, K_MSEC(kDnssTimeout), K_NO_WAIT);
@@ -602,6 +617,14 @@ CHIP_ERROR AppTaskCommon::InitCommonParts(void)
 #endif
     LogErrorOnFailure(initParams.InitializeStaticResourcesBeforeServerInit());
     VerifyOrDie(gSimpleAttributePersistence.Init(initParams.persistentStorageDelegate) == CHIP_NO_ERROR);
+
+    /* Add deferred storage attribute for provider */
+#if CONFIG_DEFERRED_ATTR_STORAGE
+    app::SetAttributePersistenceProvider(&gDeferredAttributePersister);
+#else
+    app::SetAttributePersistenceProvider(&gSimpleAttributePersistence);
+#endif
+
 #if APP_SET_DEVICE_INFO_PROVIDER
     gExampleDeviceInfoProvider.SetStorageDelegate(initParams.persistentStorageDelegate);
     chip::DeviceLayer::SetDeviceInfoProvider(&gExampleDeviceInfoProvider);
@@ -617,8 +640,6 @@ CHIP_ERROR AppTaskCommon::InitCommonParts(void)
     // ZAP/codegen applications use the generated data model.
     initParams.dataModelProvider = CodegenDataModelProviderInstance(initParams.persistentStorageDelegate);
     ReturnErrorOnFailure(chip::Server::GetInstance().Init(initParams));
-    /* Add deferred storage attribute for provider */
-    app::SetAttributePersistenceProvider(&gDeferredAttributePersister);
 
     ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
@@ -904,11 +925,7 @@ void AppTaskCommon::FactoryResetHandler(AppEvent * aEvent)
         k_timer_stop(&sFactoryResetTimer);
         sFactoryResetCntr = 0;
 
-        #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE
-        dual_mode_switch(OPCODE_FACTORY_RESET);
-        #elif CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
-        dual_mode_auto_switch(OPCODE_FACTORY_RESET);
-        #endif
+        AppTaskCommon::ResetDualModeState();
         /* clear matter nvs for unclean info in matter nvs */
         LOG_INF("Factory Reset TC: Erase matter nvs directly and reboot");
         flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
@@ -1136,13 +1153,18 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
             pm_policy_state_lock_put(PM_STATE_SUSPEND_TO_IDLE, PM_ALL_SUBSTATES);
 #endif
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
             ChipLogProgress(DeviceLayer, "Switch to Thread");
-            LogErrorOnFailure(ThreadStackMgrImpl().SetThreadEnabled(true));
+            CHIP_ERROR error = ThreadStackMgrImpl().SetThreadEnabled(true);
+            if (error != CHIP_NO_ERROR)
+            {
+                ChipLogError(DeviceLayer, "Failed to enable Thread: %" CHIP_ERROR_FORMAT, error.Format());
+                return;
+            }
 
             ChipDeviceEvent opEvent;
-            opEvent.Type     = DeviceEventType::kOperationalNetworkStarted;
-            CHIP_ERROR error = PlatformMgr().PostEvent(&opEvent);
+            opEvent.Type = DeviceEventType::kOperationalNetworkStarted;
+            error        = PlatformMgr().PostEvent(&opEvent);
             if (error != CHIP_NO_ERROR)
             {
                 ChipLogError(DeviceLayer, "PostEvent err: %" CHIP_ERROR_FORMAT, error.Format());
@@ -1151,13 +1173,13 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
         }
         break;
     case DeviceEventType::kCommissioningComplete:
-        #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE
+#if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE
         dual_mode_switch(OPCODE_MATTER_PAIRED);
-        #elif CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
+#elif CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
         /* clear boot from zigbee after commission*/
         sBoot_zb = 0;
         dual_mode_auto_switch(OPCODE_MATTER_PAIRED);
-        #endif
+#endif
         printk("Commissioning complete; Matter commissioned flag set.\n");
         break;
 
@@ -1175,7 +1197,6 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
             printk("FailSafeTimer expired; Matter commissioning failed.\n");
         }
         break;
-
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD
     case DeviceEventType::kDnssdInitialized:
@@ -1217,6 +1238,17 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
             }
         }
 #endif
+#if defined CONFIG_IEEE802154_TLX_OPTIMIZATION
+        otDeviceRole curRole;
+        ThreadStackMgr().LockThreadStack();
+        curRole = otThreadGetDeviceRole(openthread_get_default_instance());
+        ThreadStackMgr().UnlockThreadStack();
+        if (sIsNetworkAttached && curRole != OT_DEVICE_ROLE_DISABLED && curRole != OT_DEVICE_ROLE_DETACHED)
+        {
+            if (isThreadCommissioned == false)
+                isThreadCommissioned = true;
+        }
+#endif /* CONFIG_IEEE802154_TLX_OPTIMIZATION */
 
 #elif CHIP_DEVICE_CONFIG_ENABLE_WIFI
     case DeviceEventType::kWiFiConnectivityChange:
