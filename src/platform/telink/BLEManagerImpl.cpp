@@ -175,7 +175,7 @@ constexpr int kCHIPoBLE_CCC_AttributeIndex = 3;
 // leaves the on-air payload without a Flags AD, and strict peers such as iOS
 // then treat the advertisement as non-connectable. Use explicit static arrays
 // with BT_DATA, like the CHIPoBLE advertising path does.
-static void RestartBleAdvertising(void)
+static bool RestartBleAdvertising(void)
 {
     static const uint8_t advUuids[] = {
         BT_UUID_16_ENCODE(BT_UUID_HTS_VAL),
@@ -194,7 +194,9 @@ static void RestartBleAdvertising(void)
     if (err)
     {
         ChipLogError(DeviceLayer, "Failed to start BLE advertisement: %d", err);
+        return false;
     }
+    return true;
 }
 
 } // unnamed namespace
@@ -296,7 +298,8 @@ void BLEManagerImpl::DriveBLEState(intptr_t arg)
     BLEMgrImpl().DriveBLEState();
 }
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+    !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 {
     // Runs after CommissioningWindowManager::Cleanup() has disabled BLE advertising.
@@ -310,17 +313,24 @@ void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 #if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
 {
-    if (sBleTeardownDone || !sInstance.mBLERadioInitialized)
-    {
-        return;
-    }
-
     /* Thread must be attached before the RF handover; retry until it is. */
     otDeviceRole role = otThreadGetDeviceRole(openthread_get_default_instance());
     if (role == OT_DEVICE_ROLE_DISABLED || role == OT_DEVICE_ROLE_DETACHED)
     {
         ChipLogDetail(DeviceLayer, "BLE teardown: Thread not attached yet, retry in 5s");
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(5));
+        return;
+    }
+
+    /* Defer the teardown state machine to the CHIP task so the BLE state
+     * (mGAPConns / mFlags / advertising) is accessed under the CHIP stack lock. */
+    TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(DoBleTeardown, 0);
+}
+
+void BLEManagerImpl::DoBleTeardown(intptr_t arg)
+{
+    if (sBleTeardownDone || !sInstance.mBLERadioInitialized)
+    {
         return;
     }
 
@@ -349,18 +359,14 @@ void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
     /* Stop the BLE-scheduler insert task time slot. */
     tlx_bt_802154_dual_mode_disable();
 
-    /* Wait until the current insert slot ends and RF parks back in BLE mode
+    /* RF must park back in BLE mode before bt_disable() is safe
      * (tlx_switch_to_ble_mode clears tlx_rf_802154_mode from the scheduler
-     * IRQ). bt_disable() below is only safe once RF belongs to BLE. */
-    for (uint32_t waited_ms = 0; tlx_rf_802154_mode; waited_ms += 10)
+     * IRQ). Check once and retry later instead of blocking the CHIP task. */
+    if (tlx_rf_802154_mode)
     {
-        if (waited_ms >= 1000)
-        {
-            ChipLogError(DeviceLayer, "RF failed to park in BLE mode, retry BLE teardown in 10s");
-            TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
-            return;
-        }
-        k_sleep(K_MSEC(10));
+        ChipLogError(DeviceLayer, "RF not parked in BLE mode, retry BLE teardown in 10s");
+        TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
+        return;
     }
 
     bt_le_adv_stop();
@@ -417,7 +423,10 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     }
 
     /* 3. Restart advertising (mirrors ot_ble_pm's bt_le_adv_restart()). */
-    RestartBleAdvertising();
+    if (!RestartBleAdvertising())
+    {
+        return false;
+    }
 
     /* 4. Restore the BLE/802.15.4 insert-task time-sharing: 802.15.4 runs
      *    in the BLE scheduler again, Thread keeps running alongside BLE. */
