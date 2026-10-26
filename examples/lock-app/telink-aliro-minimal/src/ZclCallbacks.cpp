@@ -66,20 +66,24 @@ bool emberAfPluginDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const N
                                             const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                             OperationErrorEnum & err)
 {
-    ChipLogProgress(Zcl, "Door Lock App: Lock Command endpoint=%d", endpointId);
+    ChipLogProgress(Zcl, "Matter LockDoor command rejected: direct lock control via Matter is disabled, "
+                         "lock operations are exclusively handled through Aliro Access Protocol");
 
-    return LockMgr().LockAction(AppEvent::kEventType_DeviceAction, LockManager::LOCK_ACTION, LockManager::OperationSource::kRemote,
-                                endpointId, err, fabricIdx, nodeId, pinCode);
+    err = chip::app::Clusters::DoorLock::OperationErrorEnum::kUnspecified;
+
+    return false;
 }
 
 bool emberAfPluginDoorLockOnDoorUnlockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                                               const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                               OperationErrorEnum & err)
 {
-    ChipLogProgress(Zcl, "Door Lock App: Unlock Command endpoint=%d", endpointId);
+    ChipLogProgress(Zcl, "Matter UnlockDoor command rejected: direct unlock control via Matter is disabled, "
+                         "unlock operations require successful authorization through Aliro Access Protocol");
 
-    return LockMgr().LockAction(AppEvent::kEventType_DeviceAction, LockManager::UNLOCK_ACTION,
-                                LockManager::OperationSource::kRemote, endpointId, err, fabricIdx, nodeId, pinCode);
+    err = chip::app::Clusters::DoorLock::OperationErrorEnum::kUnspecified;
+
+    return false;
 }
 
 bool emberAfPluginDoorLockGetCredential(chip::EndpointId endpointId, uint16_t credentialIndex, CredentialTypeEnum credentialType,
