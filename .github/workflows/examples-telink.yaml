@@ -86,7 +86,7 @@ jobs:
 
             - name: clean out build output (keep tools)
               run: rm -rf ./out/telink*
- 
+
             - name: Build example Telink (B92 retention) Air Quality Sensor App
               # Run on master/release/merge queue, Telink-related PRs, and Telink organization PRs
               if: github.event.pull_request.number == null || github.event.pull_request.head.repo.full_name == 'telink-semi/tl_matter' || steps.changed_paths.outputs.telink == 'true'

@@ -36,7 +36,6 @@ from builders.tizen import TizenApp, TizenBoard, TizenBuilder
 
 from .target import BuildTarget, TargetPart
 
-
 # IMPORTANT: Keep list in sync with:
 #   - enabled_devices.cmake
 #   - enabled_devices.gni

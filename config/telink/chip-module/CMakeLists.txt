@@ -125,7 +125,7 @@ matter_add_gn_arg_bool  ("chip_enable_factory_data"               CONFIG_CHIP_FA
 matter_add_gn_arg_bool  ("chip_mdns_minimal"                      CONFIG_WIFI_W91)
 matter_add_gn_arg_bool  ("chip_mdns_platform"                     CONFIG_NET_L2_OPENTHREAD)
 matter_add_gn_arg_bool  ("chip_persist_subscriptions"             CONFIG_CHIP_PERSISTENT_SUBSCRIPTIONS)
-matter_add_gn_arg_bool  ("chip_config_enable_groupcast"                  CONFIG_CHIP_ENABLE_GROUPCAST)
+matter_add_gn_arg_bool  ("chip_config_enable_groupcast"           CONFIG_CHIP_ENABLE_GROUPCAST)
 
 if (CONFIG_CHIP_ENABLE_ICD_SUPPORT)
     matter_add_gn_arg_bool  ("chip_enable_icd_lit"                       CONFIG_CHIP_ICD_LIT_SUPPORT)
@@ -207,9 +207,12 @@ endif()
 set(BLOCK_SIZE "1024")
 set(CONFIG_DUAL_MODE_ARG 0)
 
-# Dual-mode packaging is option; the default is a Matter-only build.
+# Dual-mode packaging is optional; the default is a Matter-only build.
+# CONFIG_DUAL_MODE is defined by Telink TLX-series SoC Kconfigs, so its
+# presence (with a value > 0) is the single source of truth for dual-mode
+# support and covers every TLX SoC.
 set(TELINK_DUAL_MODE_ENABLED OFF)
-if((CONFIG_SOC_RISCV_TELINK_TL323X OR CONFIG_SOC_RISCV_TELINK_TL521X) AND DEFINED CONFIG_DUAL_MODE AND CONFIG_DUAL_MODE GREATER 0)
+if(DEFINED CONFIG_DUAL_MODE AND CONFIG_DUAL_MODE GREATER 0)
     set(TELINK_DUAL_MODE_ENABLED ON)
 endif()
 
@@ -245,6 +248,8 @@ if (EXISTS ${SBOOT_FILE_PATH})
     set(MCUBOOT_START_OFFSET_ARG "0")
 endif()
 
+set(ZB_FILE_PATH "${ZEPHYR_BASE}/${SOC}_FW/ZB/Zigbee-SampleDemo.bin")
+
 if(TELINK_DUAL_MODE_ENABLED)
 
 # Calculate the offset of zigbee partition relative to slot0 start
@@ -254,7 +259,6 @@ dt_reg_size(slot0_size PATH ${slot0_partition_path})
 message(STATUS "slot0_start: ${slot0_start}")
 message(STATUS "slot0_size: ${slot0_size}")
 
-set(ZB_FILE_PATH "${ZEPHYR_BASE}/${SOC}_FW/ZB/Zigbee-SampleDemo.bin")
 if (CONFIG_DUAL_MODE AND EXISTS ${ZB_FILE_PATH})
 dt_nodelabel(zb_partition_path NODELABEL "slot0_zb_partition")
 dt_reg_addr(zb_start PATH ${zb_partition_path})
@@ -271,6 +275,8 @@ else()
     message(WARNING "File ${ZB_FILE_PATH} does not exist. ZB_FW_OFFSET_DECIMAL will be set to 0.")
 endif()
 set(ZB_FW_OFFSET_DECIMAL 0)
+endif()
+
 endif()
 
 add_custom_target(
@@ -357,7 +363,6 @@ else()
         COMMAND
         cp ${PROJECT_BINARY_DIR}/../modules/chip-module/build_mcuboot/zephyr/zephyr.bin ${PROJECT_BINARY_DIR}/mcuboot.bin
     )
-endif()
 endif()
 
 # process_binaries consumes mcuboot.bin; wait for its generation.

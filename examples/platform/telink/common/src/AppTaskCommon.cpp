@@ -64,10 +64,10 @@
 bool AppTaskCommon::sIsCommissioningFailed = false;
 
 #include "Reboot.h"
-#include <zephyr_pm_observer.h>
 #include <zephyr/fs/nvs.h>
 #include <zephyr/settings/settings.h>
 #include <zephyr/sys/reboot.h>
+#include <zephyr_pm_observer.h>
 
 #if defined(CONFIG_PM) && !defined(CONFIG_CHIP_ENABLE_PM_DURING_BLE)
 #include <zephyr/pm/policy.h>
