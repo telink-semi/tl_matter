@@ -163,6 +163,39 @@ bt_gatt_service sChipoBleService = BT_GATT_SERVICE(sChipoBleAttributes);
 // This value should be adjusted accordingly if the service declaration changes.
 constexpr int kCHIPoBLE_CCC_AttributeIndex = 3;
 
+CHIP_ERROR InitBLEMACAddress()
+{
+    // By default the BLE public address will be applied. In case if previously generated random address doesn't exist
+    // or public address doesn't exist, the new random static address will be generated and written to flash
+    int error = 0;
+    bt_addr_le_t addr;
+
+#if defined(CONFIG_BT_B9X)
+    b9x_bt_blc_mac_init(addr.a.val);
+#elif defined(CONFIG_BT_TLX)
+    tlx_bt_blc_mac_init(addr.a.val);
+#elif defined(CONFIG_BT_W91)
+    telink_bt_blc_mac_init(addr.a.val);
+#endif
+
+    if (BT_ADDR_IS_STATIC(&addr.a)) // in case of Random static address, create a new id
+    {
+        addr.type = BT_ADDR_LE_RANDOM;
+
+        error = bt_id_create(&addr, nullptr);
+
+        if (error < 0)
+        {
+            ChipLogError(DeviceLayer, "Failed to create BLE identity: %d", error);
+            return System::MapErrorZephyr(error);
+        }
+    }
+
+    ChipLogProgress(DeviceLayer, "BLE address: %02X:%02X:%02X:%02X:%02X:%02X", addr.a.val[5], addr.a.val[4], addr.a.val[3],
+                    addr.a.val[2], addr.a.val[1], addr.a.val[0]);
+    return CHIP_NO_ERROR;
+}
+
 // Restart a connectable advertisement after BLE has been re-enabled following
 // the post-commissioning teardown. Mirrors the ot_ble_pm sample's
 // bt_le_adv_restart()/bt_ready(): the name is carried in the scan response and
@@ -224,6 +257,8 @@ CHIP_ERROR BLEManagerImpl::_Init(void)
     mGAPConns = 0;
 
     memset(mSubscribedConns, 0, sizeof(mSubscribedConns));
+
+    ReturnErrorOnFailure(InitBLEMACAddress());
 
 #ifdef CONFIG_CHIP_CONCURRENT_MODE
     // Concurrent mode: BLE and Thread can coexist, init BLE stack immediately.

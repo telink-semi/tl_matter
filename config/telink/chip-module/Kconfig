@@ -249,10 +249,13 @@ config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	  SED/ICD can reach its lowest power state. This is one-way: BLE cannot
 	  be re-enabled without a reboot (factory reset followed by reboot is
 	  the standard way to re-commission), unless
-	  CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING is enabled. Only
-	  supported on SoCs using the ieee802154_tlx driver
-	  (TL321X/TL721X/TL322X/TL323X); the TL521X driver does not yet support
-	  the post-join teardown.
+	  CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING is enabled.
+
+	  Currently only supported on TL721X: the dual-mode teardown helpers
+	  and the matching board configs (boards/tl7218x_retention_concurrent.conf
+	  and boards/tl7218x_retention_ble_off.conf) exist for TL721X only.
+	  Other Telink SoCs (e.g. TL321X, TL322X, TL323X, TL521X) are not
+	  supported yet.
 
 config CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING
 	bool "Resume BLE on demand after the post-commissioning teardown"
@@ -269,7 +272,12 @@ config CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING
 	  for stopping BLE again when done (the teardown sequence is
 	  available to be re-armed).
 
-	  Requires a hal_telink revision providing
+	  Currently only supported on TL721X (same restriction as
+	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING): the resume helpers are
+	  provided for TL721X only. Other Telink SoCs (e.g. TL321X, TL322X,
+	  TL323X, TL521X) are not supported yet.
+
+	  Also requires a hal_telink revision providing
 	  tlx_bt_802154_dual_mode_resume() (run "west update hal_telink").
 
 config SHELL_BACKEND_SERIAL_RX_RING_BUFFER_SIZE
