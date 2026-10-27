@@ -179,7 +179,7 @@ public:
 #endif
 };
 
-#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD && defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE)
 class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
 {
 public:
@@ -197,7 +197,7 @@ public:
         TEMPORARY_RETURN_IGNORED mBLEManagerImpl.StartAdvertising();
     };
 };
-#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD && CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE */
 
 /**
  * Returns a reference to the public interface of the BLEManager singleton object.
