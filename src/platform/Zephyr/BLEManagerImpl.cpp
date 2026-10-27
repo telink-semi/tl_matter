@@ -240,6 +240,10 @@ CHIP_ERROR BLEManagerImpl::_Init()
 {
     int err = 0;
     int id  = 0;
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+    mBLERadioInitialized = false;
+    mPrescanState        = PrescanState::kIdle;
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
 
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
     mFlags.ClearAll().Set(Flags::kAdvertisingEnabled, CHIP_DEVICE_CONFIG_CHIPOBLE_ENABLE_ADVERTISING_AUTOSTART);
@@ -256,6 +260,9 @@ CHIP_ERROR BLEManagerImpl::_Init()
     err = bt_enable(nullptr);
 
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+    mBLERadioInitialized = true;
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
 
     settings_load();
 
@@ -300,7 +307,16 @@ CHIP_ERROR BLEManagerImpl::_Init()
 
 void BLEManagerImpl::_Shutdown()
 {
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+    mPrescanState = PrescanState::kIdle;
+    if (mBLERadioInitialized)
+    {
+        bt_disable();
+        mBLERadioInitialized = false;
+    }
+#else
     bt_disable();
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
 }
 
 void BLEManagerImpl::DriveBLEState(intptr_t arg)
@@ -508,6 +524,43 @@ CHIP_ERROR BLEManagerImpl::UnregisterGattService()
 
 CHIP_ERROR BLEManagerImpl::StartAdvertising()
 {
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+    if (chip::DeviceLayer::ConnectivityMgr().IsThreadProvisioned())
+    {
+        ChipLogProgress(DeviceLayer, "Device provisioned, can't StartAdvertising");
+        return CHIP_ERROR_INCORRECT_STATE;
+    }
+    if (mPrescanState == PrescanState::kIdle)
+    {
+        if (!mBLERadioInitialized)
+        {
+            mPrescanState = PrescanState::kInProgress;
+
+            static InitScanCallback sInitScanCallback;
+            CHIP_ERROR scanErr = chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInitScanCallback);
+            if (scanErr == CHIP_NO_ERROR)
+            {
+                ChipLogProgress(DeviceLayer,
+                                "Advertising resumes from InternalScanCallback::OnFinished once the prescan completes");
+                return CHIP_NO_ERROR;
+            }
+
+            mPrescanState = PrescanState::kIdle;
+            ChipLogError(DeviceLayer, "Failed to start Thread prescan: %" CHIP_ERROR_FORMAT "; starting BLE directly",
+                         scanErr.Format());
+        }
+        else
+        {
+            ChipLogProgress(DeviceLayer, "Thread prescan skipped: BLE radio already initialized");
+        }
+    }
+    else if (mPrescanState == PrescanState::kInProgress)
+    {
+        ChipLogProgress(DeviceLayer, "Thread prescan is ongoing, advertising resumes from InternalScanCallback::OnFinished.");
+        return CHIP_NO_ERROR;
+    }
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
+
     // Re-initializing the BLE layer after shutdown
     if (!BleLayer::IsInitialized())
     {
@@ -517,7 +570,24 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
     // Initialize the BLE radio if not initialized
     if (!bt_is_ready())
     {
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+        const bool threadWasEnabled = ThreadStackMgrImpl().IsThreadEnabled();
+        ReturnErrorOnFailure(ThreadStackMgrImpl().SetThreadEnabled(false));
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
+
         int err = bt_enable(nullptr);
+
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+        if (err != 0 && threadWasEnabled)
+        {
+            LogErrorOnFailure(ThreadStackMgrImpl().SetThreadEnabled(true));
+        }
+        if (err == 0)
+        {
+            mBLERadioInitialized = true;
+        }
+#endif /* CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD */
+
         VerifyOrReturnError(err == 0, MapErrorZephyr(err));
     }
 
@@ -613,6 +683,13 @@ CHIP_ERROR BLEManagerImpl::_SetAdvertisingEnabled(bool val)
     ChipLogDetail(DeviceLayer, "CHIPoBLE advertising set to %s", val ? "on" : "off");
 
     mFlags.Set(Flags::kAdvertisingEnabled, val);
+#if CHIP_DEVICE_CONFIG_NONCONCURRENT_BLE_THREAD
+    if (!val)
+    {
+        mPrescanState = PrescanState::kIdle;
+    }
+#endif
+
     // Ensure that each enabling/disabling of the general advertising clears
     // the extended mode, to make sure we always start fresh in the regular mode
     mFlags.Set(Flags::kExtendedAdvertisingEnabled, false);

@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2022 Project CHIP Authors
+ *    Copyright (c) 2022-2026 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -228,21 +228,22 @@ bool LoadDACCertAndKey(uint8_t * base_buffer , struct FactoryData * factoryData)
     uint8_t buffer[34] = {0};
     const struct device * mFlashDevice = DEVICE_DT_GET(DT_CHOSEN(zephyr_flash_controller));
     int ret = flash_read(mFlashDevice, FIXED_PARTITION_OFFSET(dac_keypair_partition), buffer, sizeof(buffer));
-
-    dac_priv_key_len    = buffer[0];
-    dac_priv_key_len |= (uint16_t) buffer[1] << 8;
-    factoryData->dac_priv_key.len = dac_priv_key_len;
-    if (!factoryData->dac_priv_key.len)
+    if (ret != 0)
     {
         return false;
     }
 
+    dac_priv_key_len = buffer[0];
+    dac_priv_key_len |= (uint16_t) buffer[1] << 8;
+    if (dac_priv_key_len != sizeof(dac_key_decrypt))
+    {
+        return false;
+    }
+    factoryData->dac_priv_key.len = dac_priv_key_len;
+
     if (efuse_get_ieee_addr(ieee_addr) == DRV_API_SUCCESS)
     {
-        LOG_HEXDUMP_INF(ieee_addr, 8, "IEEE address");
-
         memcpy(chip_id, ieee_addr, 8);
-        LOG_HEXDUMP_INF(chip_id, 16, "chip_id with IEEE address and zero padding");
 
 #if CONFIG_SOC_RISCV_TELINK_TL323X || CONFIG_SOC_RISCV_TELINK_TL521X
         ske_dig_en();
@@ -265,15 +266,18 @@ bool LoadDACCertAndKey(uint8_t * base_buffer , struct FactoryData * factoryData)
     }
 
     size_t dac_cert_len = 0;
-    flash_read(mFlashDevice, FIXED_PARTITION_OFFSET(dac_keypair_partition)+100, buffer, 2);
-    dac_cert_len = buffer[0];
-    dac_cert_len |= (uint16_t) buffer[1] << 8;
-    factoryData->dac_cert.len = dac_cert_len;
-    if (!factoryData->dac_cert.len)
+    if (flash_read(mFlashDevice, FIXED_PARTITION_OFFSET(dac_keypair_partition) + 100, buffer, 2) != 0)
     {
         return false;
     }
-    factoryData->dac_cert.data =(uint8_t *) (0x20000000 + FIXED_PARTITION_OFFSET(dac_keypair_partition) + 102);
+    dac_cert_len = buffer[0];
+    dac_cert_len |= (uint16_t) buffer[1] << 8;
+    if (dac_cert_len == 0 || dac_cert_len > FIXED_PARTITION_SIZE(dac_keypair_partition) - 102)
+    {
+        return false;
+    }
+    factoryData->dac_cert.len  = dac_cert_len;
+    factoryData->dac_cert.data = (uint8_t *) (0x20000000 + FIXED_PARTITION_OFFSET(dac_keypair_partition) + 102);
     // LOG_INF("[LoadDACCertAndKey]DAC cert len=%u", dac_cert_len);
     // LOG_HEXDUMP_INF(factoryData->dac_cert.data, factoryData->dac_cert.len, "DAC CERT");
 

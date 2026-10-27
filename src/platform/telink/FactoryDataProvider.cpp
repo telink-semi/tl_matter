@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2022-2024 Project CHIP Authors
+ *    Copyright (c) 2022-2026 Project CHIP Authors
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
  *    you may not use this file except in compliance with the License.
@@ -53,6 +53,7 @@ void GetFactoryData(uint8_t * buf, const void * const data, const size_t len)
 
 CHIP_ERROR GetFactoryDataString(const FactoryDataString & str, char * buf, size_t bufSize)
 {
+    VerifyOrReturnError(str.data != nullptr, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
     VerifyOrReturnError(bufSize >= str.len + 1, CHIP_ERROR_BUFFER_TOO_SMALL);
 
     GetFactoryData((uint8_t *) buf, str.data, str.len);
@@ -110,7 +111,6 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
         return error;
     }
 
-
 #if CHIP_DEVICE_SECURE_PROGRAMMING
     if (!ParseFactoryData(factoryData + kFactoryDataOffset, factoryDataSize - kFactoryDataOffset, &mFactoryData))
 #else
@@ -129,7 +129,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
     // LOG_HEXDUMP_INF(mFactoryData.dac_cert.data, mFactoryData.dac_cert.len, "DAC CERT");
 
 #if CHIP_DEVICE_SECURE_PROGRAMMING
-    if (!LoadDACCertAndKey(mFactoryDataBuffer , &mFactoryData))
+    if (!LoadDACCertAndKey(mFactoryDataBuffer, &mFactoryData))
     {
         ChipLogError(DeviceLayer, "Failed to inject dac data");
         free(ptr); // Only free on failure
@@ -424,9 +424,34 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::GetManufacturingDate(uint16_t 
 }
 
 template <class FlashFactoryData>
-CHIP_ERROR FactoryDataProvider<FlashFactoryData>::GetManufacturingDateString(char * buf, size_t bufSize)
+CHIP_ERROR FactoryDataProvider<FlashFactoryData>::GetManufacturingDateSuffix(MutableCharSpan & suffixBuffer)
 {
-    return GetFactoryDataString(mFactoryData.mfg_date_str, buf, bufSize);
+    if (mFactoryData.mfg_date_str.data == nullptr)
+    {
+        suffixBuffer.reduce_size(0);
+        return CHIP_NO_ERROR;
+    }
+
+    constexpr size_t kDateLength    = 8;
+    constexpr size_t kMaxDateLength = 16;
+    char date[kMaxDateLength + 1];
+    ReturnErrorOnFailure(GetFactoryDataString(mFactoryData.mfg_date_str, date, sizeof(date)));
+
+    const size_t dateLen = mFactoryData.mfg_date_str.len;
+    VerifyOrReturnError(dateLen >= kDateLength, CHIP_ERROR_INVALID_ARGUMENT);
+
+    // YYYY-MM-DD has no vendor suffix; the date prefix is provided by GetManufacturingDate().
+    if (dateLen == kDateLength || (dateLen == 10 && date[4] == '-' && date[7] == '-'))
+    {
+        suffixBuffer.reduce_size(0);
+        return CHIP_NO_ERROR;
+    }
+
+    const size_t suffixLen = dateLen - kDateLength;
+    VerifyOrReturnError(suffixBuffer.size() >= suffixLen, CHIP_ERROR_BUFFER_TOO_SMALL);
+    memcpy(suffixBuffer.data(), date + kDateLength, suffixLen);
+    suffixBuffer.reduce_size(suffixLen);
+    return CHIP_NO_ERROR;
 }
 
 template <class FlashFactoryData>
