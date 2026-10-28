@@ -357,14 +357,15 @@ jobs:
             - name: clean out build output (keep tools)
               run: rm -rf ./out/telink*
 
-            - name: Build example Telink (B92 retention) Smoke CO Alarm App
+            - name: Build example Telink (TL3228X retention) Smoke CO Alarm App
               # Run for all PRs and master/release/merge queue
+              # NOTE: Uses TL3228X retention only to verify compilation; sleep functionality is not yet supported on this board.
               run: |
                   ./scripts/run_in_build_env.sh \
                     "./scripts/build/build_examples.py --target 'telink-tl3228x_retention-smoke-co-alarm' build"
                   .environment/pigweed-venv/bin/python3 scripts/tools/memory/gh_sizes.py \
-                    telink tlsr9528a_retention smoke-co-alarm-app \
-                    out/telink-tlsr9528a_retention-smoke-co-alarm/zephyr/zephyr.elf \
+                    telink tl3228x_retention smoke-co-alarm-app \
+                    out/telink-tl3228x_retention-smoke-co-alarm/zephyr/zephyr.elf \
                     /tmp/bloat_reports/
 
             - name: clean out build output (keep tools)
