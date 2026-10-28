@@ -238,6 +238,14 @@ config CHIP_CONCURRENT_BLE_IDLE
 	  Use this together with a button handler that calls
 	  SetBLEAdvertisingEnabled(true) when BLE is needed.
 
+	  Note: this option keeps the BLE stack initialized, so it is suitable
+	  for line-powered (CONFIG_PM=n) devices that only need to stop
+	  advertising after commissioning but keep BLE available on demand.
+	  Battery-powered SED/ICD devices should prefer
+	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING instead, as BLE_IDLE keeps
+	  the BLE/802.15.4 RF time-sharing running and therefore consumes more
+	  power.
+
 config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	bool "Fully disable BLE after Thread commissioning in concurrent mode"
 	depends on CHIP_CONCURRENT_MODE && !CHIP_CONCURRENT_BLE_IDLE
@@ -251,11 +259,14 @@ config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	  the standard way to re-commission), unless
 	  CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING is enabled.
 
-	  Currently only supported on TL721X: the dual-mode teardown helpers
-	  and the matching board configs (boards/tl7218x_retention_concurrent.conf
-	  and boards/tl7218x_retention_ble_off.conf) exist for TL721X only.
-	  Other Telink SoCs (e.g. TL321X, TL322X, TL323X, TL521X) are not
-	  supported yet.
+	  Requires CONFIG_PM=y: the teardown relies on the hal_telink
+	  tlx_bt_802154_dual_mode_suspend()/resume() helpers, which are currently
+	  only built under CONFIG_PM. For line-powered (CONFIG_PM=n) devices that
+	  only need to stop advertising after commissioning but keep BLE
+	  resumable, use CHIP_CONCURRENT_BLE_IDLE instead.
+
+	  Currently validated on TL721X only. Other Telink SoCs (e.g. TL321X,
+	  TL322X, TL323X, TL521X) are not yet tested.
 
 config CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING
 	bool "Resume BLE on demand after the post-commissioning teardown"
@@ -272,10 +283,12 @@ config CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING
 	  for stopping BLE again when done (the teardown sequence is
 	  available to be re-armed).
 
-	  Currently only supported on TL721X (same restriction as
-	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING): the resume helpers are
-	  provided for TL721X only. Other Telink SoCs (e.g. TL321X, TL322X,
-	  TL323X, TL521X) are not supported yet.
+	  Requires CONFIG_PM=y (inherited from
+	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING).
+
+	  Currently validated on TL721X only (inherited from
+	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING). Other Telink SoCs
+	  (e.g. TL321X, TL322X, TL323X, TL521X) are not yet tested.
 
 	  Also requires a hal_telink revision providing
 	  tlx_bt_802154_dual_mode_resume() (run "west update hal_telink").
