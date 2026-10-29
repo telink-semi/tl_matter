@@ -17,8 +17,6 @@
 This release is the follow-up to `tl_v1.4.1-v1.5` and keeps the Matter 1.5
 protocol stack while extending the Telink Matter platform:
 
--   Adds the **TL3228X** SoC platform, including 2 MB flash and LZMA overlays,
-    together with the smoke-CO-alarm and window-covering examples.
 -   Adds **BLE + Thread concurrent power management** (**TL721X only**): BLE is
     fully torn down after commissioning (RF handed permanently to 802.15.4 for
     the lowest SED power), with an optional on-demand BLE resume used for BLE
