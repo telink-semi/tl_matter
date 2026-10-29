@@ -65,7 +65,7 @@ CHIP_ERROR GetFactoryDataString(const FactoryDataString & str, char * buf, size_
 } // namespace
 
 namespace DeviceLayer {
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
 static constexpr uint32_t kFactoryDataOffset = 6;
 #endif
 template <class FlashFactoryData>
@@ -73,7 +73,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
 {
     uint8_t * factoryData = nullptr;
     size_t factoryDataSize;
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     uint8_t * dacData = nullptr;
     size_t dacDataSize;
 #endif
@@ -111,7 +111,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
         return error;
     }
 
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     if (!ParseFactoryData(factoryData + kFactoryDataOffset, factoryDataSize - kFactoryDataOffset, &mFactoryData))
 #else
     if (!ParseFactoryData(factoryData, factoryDataSize, &mFactoryData))
@@ -128,7 +128,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::Init()
     // LOG_INF("[ParseFactoryData - ParseFactoryData] DAC cert len=%u", mFactoryData.dac_cert.len);
     // LOG_HEXDUMP_INF(mFactoryData.dac_cert.data, mFactoryData.dac_cert.len, "DAC CERT");
 
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     if (!LoadDACCertAndKey(mFactoryDataBuffer, &mFactoryData))
     {
         ChipLogError(DeviceLayer, "Failed to inject dac data");
@@ -189,7 +189,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::GetDeviceAttestationCert(Mutab
     VerifyOrReturnError(outBuffer.size() >= mFactoryData.dac_cert.len, CHIP_ERROR_BUFFER_TOO_SMALL);
     VerifyOrReturnError(mFactoryData.dac_cert.data, CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND);
 
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     memcpy(outBuffer.data(), mFactoryData.dac_cert.data, mFactoryData.dac_cert.len);
 #else
     GetFactoryData(outBuffer.data(), mFactoryData.dac_cert.data, mFactoryData.dac_cert.len);
@@ -235,7 +235,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::SignWithDeviceAttestationKey(c
         return CHIP_ERROR_NO_MEMORY;
     }
 
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     memcpy(P_DACCert, mFactoryData.dac_cert.data, mFactoryData.dac_cert.len);
 #else
     GetFactoryData(P_DACCert, mFactoryData.dac_cert.data, mFactoryData.dac_cert.len);
@@ -272,7 +272,7 @@ CHIP_ERROR FactoryDataProvider<FlashFactoryData>::SignWithDeviceAttestationKey(c
         return CHIP_ERROR_NO_MEMORY;
     }
 
-#if CONFIG_SECURE_PROGRAMMING
+#ifdef CONFIG_SECURE_PROGRAMMING
     memcpy(P_DACPrivKey, mFactoryData.dac_priv_key.data, mFactoryData.dac_priv_key.len);
 #else
     GetFactoryData(P_DACPrivKey, mFactoryData.dac_priv_key.data, mFactoryData.dac_priv_key.len);
