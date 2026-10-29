@@ -376,6 +376,7 @@ config SECURE_PROGRAMMING
 
 config EXPOSE_CHIP_ID_VIA_BLE
 	bool "Enable CHIP-ID via ble"
+	depends on BT
     default n
 
 config DEFERRED_ATTR_STORAGE
