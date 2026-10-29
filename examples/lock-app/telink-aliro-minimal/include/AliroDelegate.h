@@ -46,12 +46,16 @@ public:
                                     const chip::Optional<chip::ByteSpan> & groupResolvingKey) override;
     CHIP_ERROR ClearAliroReaderConfig() override;
 
+    CHIP_ERROR RestoreAliroState();
+    CHIP_ERROR StartAliroTransports();
+
     // Aliro credential storage - called from LockManager
     static bool IsAliroCredentialType(CredentialTypeEnum type);
     bool GetCredential(uint16_t index, CredentialTypeEnum type, EmberAfPluginDoorLockCredentialInfo & out);
     bool SetCredential(uint16_t index, chip::FabricIndex creator, chip::FabricIndex modifier, DlCredentialStatus status,
                        CredentialTypeEnum type, const chip::ByteSpan & data);
     bool FindEndpointKey(const chip::ByteSpan & key, CredentialTypeEnum & type, uint16_t & index) const;
+    bool HasEndpointKey(CredentialTypeEnum type, uint16_t index) const;
 
 private:
     AliroDelegate() = default;
@@ -65,8 +69,11 @@ private:
     uint8_t mAliroGroupResolvingKey[chip::app::Clusters::DoorLock::kAliroGroupResolvingKeySize];
     bool mAliroStateInitialized = false;
     bool mAliroHasGroupResolvingKey = false;
+    bool mAliroStorageRestored = false;
+    bool mAliroNfcStarted = false;
+    bool mAliroBleStarted = false;
 
-    // Aliro credential storage (in-memory; Aliro keys are not persisted to NVM)
+    // Aliro credential cache, backed by persistent storage
     static constexpr size_t kAliroCredentialMaxSize = 65;
 
     struct CredentialSlot

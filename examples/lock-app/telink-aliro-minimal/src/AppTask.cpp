@@ -1,6 +1,6 @@
 /*
  *
- *    Copyright (c) 2023-2024 Project CHIP Authors
+ *    Copyright (c) 2026 Project CHIP Authors
  *    All rights reserved.
  *
  *    Licensed under the Apache License, Version 2.0 (the "License");
@@ -272,6 +272,10 @@ CHIP_ERROR AppTask::Init(void)
         return CHIP_ERROR_INTERNAL;
     }
 #endif
+
+    ReturnErrorOnFailure(LockMgr().RestoreUsers());
+    ReturnErrorOnFailure(AliroDelegate::GetInstance().RestoreAliroState());
+    ReturnErrorOnFailure(AliroDelegate::GetInstance().StartAliroTransports());
 
     return CHIP_NO_ERROR;
 }
