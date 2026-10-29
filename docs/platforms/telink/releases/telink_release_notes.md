@@ -39,9 +39,9 @@ The following changes land on top of tl_v1.4.1:
     the device is commissioned and running on Thread, and
     `CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING` allows an on-demand BLE
     restart (button press) for BLE OTA while Thread stays attached. Both options
-    are currently only supported on TL721X.
+    are currently validated on TL721X only.
 -   **Dependencies:** Update the Telink Zephyr SDK to
-    [`3cd5848c`](https://github.com/telink-semi/tl_zephyr/commit/3cd5848c2a76f029097e582ccb3d27211f9cae9d)
+    [`3b7996ad`](https://github.com/telink-semi/tl_zephyr/commit/3b7996ad7645869aa2b1e6f2f16d56d03b8035a5)
     (`tl_v1.5.0-v4.1.0`) and the Telink BLE SDK to
     [`eb0d1206`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/eb0d12063db5606db8bca5526ce9b54c77c45797).
 -   **CI:** Fix the Chef workflow and the disabled workflow file suffixes
@@ -86,8 +86,8 @@ The following changes land on top of tl_v1.4.1:
 -   ✅ Factory data provisioning support across the supported TLX boards
 -   ✅ Matter + Zigbee dual-mode support on 4 MB flash
 
-> **Note:** The BLE off/resume power-management options are currently only
-> supported on **TL721X** (see `CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING` and
+> **Note:** The BLE off/resume power-management options are currently validated
+> on **TL721X** only (see `CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING` and
 > `CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING` in
 > `config/telink/chip-module/Kconfig`), matching the
 > `boards/tl7218x_retention_concurrent.conf` and
@@ -111,7 +111,7 @@ The following changes land on top of tl_v1.4.1:
 
 | Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                     |
 | ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------- |
-| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`3cd5848c`](https://github.com/telink-semi/tl_zephyr/commit/3cd5848c2a76f029097e582ccb3d27211f9cae9d)         | `tl_v1.5.0-v4.1.0`, Zephyr v4.1.0 line    |
+| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`3b7996ad`](https://github.com/telink-semi/tl_zephyr/commit/3b7996ad7645869aa2b1e6f2f16d56d03b8035a5)         | `tl_v1.5.0-v4.1.0`, Zephyr v4.1.0 line    |
 | **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`eb0d1206`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/eb0d12063db5606db8bca5526ce9b54c77c45797) | Paired with the Zephyr SDK above          |
 | **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`81ded240`](https://github.com/telink-semi/hal_telink/commit/81ded2409cb3d1461818bf3899f0c76d57f4a4d0)        | Contains hal_v1 and hal_v2 sources        |
 | **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Unchanged since tl_v1.4.1; needed for OTA |
@@ -165,7 +165,7 @@ support.
 
 | Property   | Version                                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------------------- |
-| **Commit** | [3cd5848c](https://github.com/telink-semi/tl_zephyr/commit/3cd5848c2a76f029097e582ccb3d27211f9cae9d) |
+| **Commit** | [3b7996ad](https://github.com/telink-semi/tl_zephyr/commit/3b7996ad7645869aa2b1e6f2f16d56d03b8035a5) |
 
 ### Chip &amp; Hardware Versions
 
@@ -198,11 +198,11 @@ release (see
 ### Notes on Platform Support
 
 -   The `*_retention` targets enable the retention-RAM low-power layout and are
-    the recommended configuration for battery powered SED/ICD devices.
+    the recommended configuration for battery-powered SED/ICD devices.
 -   The concurrent-mode BLE off/resume power management described above is
-    **only supported on TL721X**, through the light-switch `tl7218x_retention`
-    target. Other TLX retention targets (for example TL323X) do not support this
-    feature in this release.
+    **validated on TL721X only**, through the light-switch `tl7218x_retention`
+    target. Other TLX retention targets (for example TL323X) have not been
+    validated for this feature in this release.
 -   For build commands per board/app, refer to the per-board `*_README.md` files
     inside each example's `boards/` directory.
 
@@ -230,7 +230,7 @@ Telink TL721X platform, built with the Matter SDK and Zephyr RTOS.
 
 > 📌 **Note:** Memory usage data is extracted from the linker output (Memory
 > region summary) of the build logs. `RAM_ILM_N` (instruction RAM) and `RAM`
-> (data RAM) are 128 KB each; `ROM` is the application slot0 partition. The
+> (data RAM) are 128 KB each; `ROM` is normalized to the 2 MB flash region. The
 > complete per-board table for all release targets is generated by
 > `docs/platforms/telink/releases/generate_and_update_matter_notes.py` when the
 > release package is produced. For a detailed RAM/ROM symbol breakdown, run
