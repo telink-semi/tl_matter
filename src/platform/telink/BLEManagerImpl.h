@@ -160,8 +160,17 @@ private:
     uint32_t GetAdvertisingInterval();
 
     static void DriveBLEState(intptr_t arg);
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE)
+#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+    !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     static void HandleConcurrentModeReAdv(intptr_t arg);
+#endif
+#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+    /* k_work handler: runs in Zephyr sysworkq; only a delayed retry trigger
+     * that defers the teardown state machine to the CHIP task. */
+    static void HandleBleTeardownWork(struct k_work * work);
+    /* Runs on the CHIP task with the CHIP stack lock held: performs the state
+     * checks and the BLE/RF teardown transitions. */
+    static void DoBleTeardown(intptr_t arg);
 #endif
 
     // Below callbacks run from the system workqueue context and have a limited stack capacity.
@@ -190,6 +199,15 @@ public:
 
     bool NeedToResetFailSafeTimer(void);
     void ClearResetFailSafeTimerFlag(void);
+
+#if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+    /* Re-enable BLE after the post-commissioning teardown: restores the
+     * BLE/802.15.4 RF time-sharing, re-initializes the BLE stack and starts
+     * a connectable advertisement. Returns false if BLE has not been torn
+     * down yet or the resume failed. Must run in application task context
+     * (blocking). Port of the ot_ble_pm sample ble_enable(). */
+    bool ResumeBleAfterTeardown(void);
+#endif
 
 #if CHIP_DEVICE_EXPOSE_CHIP_ID_VIA_BLE
     static ssize_t HandleChipIDRead(struct bt_conn * conn, const struct bt_gatt_attr * attr, void * buf, uint16_t len,
