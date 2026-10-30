@@ -48,10 +48,10 @@ set -e
 #       - build_tl3238x_retention_dual_mode
 #
 #     Contact Sensor App:
-#       - build_tl3238x_retention_v1
-#       - build_tl3238x_retention_v2
-#       - build_tl3238x_retention_lzma_v1
-#       - build_tl3238x_retention_lzma_v2
+#       - build_tl3238x_retention_contact_v1
+#       - build_tl3238x_retention_contact_v2
+#       - build_tl3238x_retention_contact_lzma_v1
+#       - build_tl3238x_retention_contact_lzma_v2
 #
 #   TL5218X:
 #     Lighting App:
@@ -67,10 +67,10 @@ set -e
 #       - build_tl5218x_retention_dual_mode
 #
 #     Contact Sensor App:
-#       - build_tl5218x_retention_v1
-#       - build_tl5218x_retention_v2
-#       - build_tl5218x_retention_lzma_v1
-#       - build_tl5218x_retention_lzma_v2
+#       - build_tl5218x_retention_contact_v1
+#       - build_tl5218x_retention_contact_v2
+#       - build_tl5218x_retention_contact_lzma_v1
+#       - build_tl5218x_retention_contact_lzma_v2
 #
 #   TL7218X:
 #     Lighting App:
@@ -84,10 +84,10 @@ set -e
 #       - build_tl7218x_retention_lzma_v2
 #
 #     Contact Sensor App:
-#       - build_tl7218x_retention_v1
-#       - build_tl7218x_retention_v2
-#       - build_tl7218x_retention_lzma_v1
-#       - build_tl7218x_retention_lzma_v2
+#       - build_tl7218x_retention_contact_v1
+#       - build_tl7218x_retention_contact_v2
+#       - build_tl7218x_retention_contact_lzma_v1
+#       - build_tl7218x_retention_contact_lzma_v2
 #
 # If no arguments are specified, performs all steps for all targets.
 
@@ -577,6 +577,151 @@ generate_light_switch() {
     fi
 }
 
+# Function to generate Contact Sensor App
+generate_contact_sensor() {
+    echo ""
+    echo "=== Generating Contact Sensor App ==="
+    cd "$CONTACT_SENSOR_APP_DIR"
+
+    if [ "$GENERATE_TL3238X" = true ]; then
+        if should_generate build_tl3238x_retention_contact_v1; then
+            BUILD_DIR="build_tl3238x_retention_contact_v1_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter only, OTA, no LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl3238x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl3238x_retention_contact_v2; then
+            BUILD_DIR="build_tl3238x_retention_contact_v2_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter only, OTA, no LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl3238x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl3238x_retention_contact_lzma_v1; then
+            BUILD_DIR="build_tl3238x_retention_contact_lzma_v1_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter only, OTA, LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl3238x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl3238x_retention_contact_lzma_v2; then
+            BUILD_DIR="build_tl3238x_retention_contact_lzma_v2_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter only, OTA, LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl3238x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+    fi
+
+    if [ "$GENERATE_TL5218X" = true ]; then
+        if should_generate build_tl5218x_retention_contact_v1; then
+            BUILD_DIR="build_tl5218x_retention_contact_v1_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter only, OTA, no LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl5218x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl5218x_retention_contact_v2; then
+            BUILD_DIR="build_tl5218x_retention_contact_v2_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter only, OTA, no LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl5218x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl5218x_retention_contact_lzma_v1; then
+            BUILD_DIR="build_tl5218x_retention_contact_lzma_v1_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter only, OTA, LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl5218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl5218x_retention_contact_lzma_v2; then
+            BUILD_DIR="build_tl5218x_retention_contact_lzma_v2_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter only, OTA, LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl5218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+    fi
+
+    if [ "$GENERATE_TL7218X" = true ]; then
+        if should_generate build_tl7218x_retention_contact_v1; then
+            BUILD_DIR="build_tl7218x_retention_contact_v1_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Matter only, OTA, no LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_retention_contact_v2; then
+            BUILD_DIR="build_tl7218x_retention_contact_v2_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Matter only, OTA, no LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_ota.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_retention_contact_lzma_v1; then
+            BUILD_DIR="build_tl7218x_retention_contact_lzma_v1_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Matter only, OTA, LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_retention_contact_lzma_v2; then
+            BUILD_DIR="build_tl7218x_retention_contact_lzma_v2_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Matter only, OTA, LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+    fi
+}
+
 # Prepare for TL3238X dual-mode build
 prepare_dual_mode() {
     echo ""
@@ -637,10 +782,10 @@ extract_firmware() {
     BUILD_32_RET_LZMA_V2=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl3238x_retention_lzma_v2")
     BUILD_32_RET_DUAL=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl3238x_retention_dual_mode")
 
-    BUILD_32_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_v1")
-    BUILD_32_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_v2")
-    BUILD_32_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_lzma_v1")
-    BUILD_32_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_lzma_v2")
+    BUILD_32_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_contact_v1")
+    BUILD_32_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_contact_v2")
+    BUILD_32_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_contact_lzma_v1")
+    BUILD_32_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl3238x_retention_contact_lzma_v2")
 
     # TL5218X Targets
     BUILD_52_DEFAULT=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl5218x_default")
@@ -653,10 +798,10 @@ extract_firmware() {
     BUILD_52_RET_LZMA_V2=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl5218x_retention_lzma_v2")
     BUILD_52_RET_DUAL=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl5218x_retention_dual_mode")
 
-    BUILD_52_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_v1")
-    BUILD_52_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_v2")
-    BUILD_52_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_lzma_v1")
-    BUILD_52_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_lzma_v2")
+    BUILD_52_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_contact_v1")
+    BUILD_52_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_contact_v2")
+    BUILD_52_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_contact_lzma_v1")
+    BUILD_52_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl5218x_retention_contact_lzma_v2")
 
     # TL7218X Targets
     BUILD_72_DEFAULT=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl7218x_default")
@@ -667,10 +812,10 @@ extract_firmware() {
     BUILD_72_RET_LZMA_V1=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_lzma_v1")
     BUILD_72_RET_LZMA_V2=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_lzma_v2")
 
-    BUILD_72_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_v1")
-    BUILD_72_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_v2")
-    BUILD_72_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_lzma_v1")
-    BUILD_72_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_lzma_v2")
+    BUILD_72_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_v1")
+    BUILD_72_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_v2")
+    BUILD_72_CS_LZMA_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_lzma_v1")
+    BUILD_72_CS_LZMA_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_lzma_v2")
 
     echo ""
     echo "=== Verifying firmware versions ==="
@@ -1272,6 +1417,10 @@ if [ "$DO_BUILD" = true ]; then
 
     if [ "$GENERATE_SWITCH" = true ]; then
         generate_light_switch
+    fi
+
+    if [ "$GENERATE_CONTACT" = true ]; then
+        generate_contact_sensor
     fi
 
     echo ""

@@ -36,7 +36,6 @@ from builders.tizen import TizenApp, TizenBoard, TizenBuilder
 
 from .target import BuildTarget, TargetPart
 
-
 # IMPORTANT: Keep list in sync with:
 #   - enabled_devices.cmake
 #   - enabled_devices.gni
@@ -903,6 +902,8 @@ def BuildTelinkTarget():
     target.AppendModifier('thread-analyzer', thread_analyzer_config=True)
     target.AppendModifier('precompiled-ot', precompiled_ot_config=True)
     target.AppendModifier('tflm', tflm_config=True)
+    target.AppendModifier('dual-mode-action', dual_mode_config=1)
+    target.AppendModifier('dual-mode-auto', dual_mode_config=2)
     target.AppendModifier('nfc-payload', chip_enable_nfc_onboarding_payload=True)
     target.AppendModifier("log-progress", log_level=TelinkLogLevel.PROGRESS).ExceptIfRe("-log-(all|error|none)")
     target.AppendModifier("log-error", log_level=TelinkLogLevel.ERROR).ExceptIfRe("-log-(progress|all|none)")

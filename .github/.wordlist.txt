@@ -438,6 +438,7 @@ DeviceNetworkProvisioningDelegate
 DeviceNetworkProvisioningDelegateImpl
 DevicePairingDelegate
 DeviceTemperatureConfiguration
+devicetree
 Devkit
 DevKitC
 DevKitM
