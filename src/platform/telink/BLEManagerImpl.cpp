@@ -84,7 +84,7 @@ extern __attribute__((noinline)) void telink_bt_blc_mac_init(uint8_t * bt_mac);
 #endif
 }
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
 #include <platform/telink/CsReflector.h>
 #endif
 
@@ -265,7 +265,6 @@ CHIP_ERROR BLEManagerImpl::_Init()
     // Concurrent mode: BLE and Thread can coexist, init BLE stack immediately.
     err = bt_enable(nullptr);
     VerifyOrReturnError(err == 0, MapErrorZephyr(err));
-    settings_load();
 
     // Start a minimal BLE advertisement so that tlx_bt_802154_dual_mode_start()
     // can successfully insert the BLE task before Thread auto-starts.
@@ -644,7 +643,7 @@ CHIP_ERROR BLEManagerImpl::RegisterGattService()
         VerifyOrReturnError(err == 0, MapErrorZephyr(err));
         mFlags.Set(Flags::kChipoBleGattServiceRegister);
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
         // Register RAS GATT service for Channel Sounding (must be after settings load).
         settings_load();
         if (!mFlags.Has(Flags::kRasGattServiceRegistered))
@@ -1315,7 +1314,7 @@ void BLEManagerImpl::HandleConnect(struct bt_conn * conId, uint8_t err)
 
     PlatformMgr().LockChipStack();
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
     CsReflector::OnConnected(conId, err);
 #endif
 
@@ -1346,7 +1345,7 @@ void BLEManagerImpl::HandleDisconnect(struct bt_conn * conId, uint8_t reason)
 
     PlatformMgr().LockChipStack();
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING) && CHIP_DEVICE_LAYER_TARGET_TELINK
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
     CsReflector::OnDisconnected(conId);
 #endif
 
