@@ -57,6 +57,7 @@ public:
     using StateChangeCallback = void (*)(State_t);
 
     CHIP_ERROR Init(chip::app::DataModel::Nullable<DlLockState> state, StateChangeCallback callback);
+    CHIP_ERROR RestoreUsers();
 
     bool LockAction(int32_t appSource, Action_t action, OperationSource source, chip::EndpointId endpointId);
     bool LockAction(int32_t appSource, Action_t action, OperationSource source, chip::EndpointId endpointId,
@@ -79,6 +80,7 @@ public:
                        DlCredentialStatus credentialStatus, CredentialTypeEnum credentialType,
                        const chip::ByteSpan & credentialData);
     bool ValidateAliroEndpointKey(const chip::ByteSpan & key) const;
+    bool HasAliroAuthorizedEndpoint() const;
 
 private:
     struct UserSlot

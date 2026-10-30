@@ -19,8 +19,10 @@
 #include <LockManager.h>
 
 #include <AliroDelegate.h>
+#include <AliroStorage.h>
 #include <AppTask.h>
 #include <app/clusters/door-lock-server/door-lock-server.h>
+#include <cstdio>
 #include <cstring>
 #include <lib/support/logging/CHIPLogging.h>
 #include <platform/CHIPDeviceLayer.h>
@@ -34,10 +36,82 @@ using namespace chip::app::Clusters::DoorLock;
 
 LockManager LockManager::sLock;
 
+namespace {
+
+struct PersistedUserCredential
+{
+    uint16_t index;
+    uint8_t type;
+};
+
+struct PersistedUser
+{
+    uint32_t version;
+    uint32_t uniqueId;
+    uint16_t credentialCount;
+    uint8_t status;
+    uint8_t type;
+    uint8_t credentialRule;
+    uint8_t createdBy;
+    uint8_t lastModifiedBy;
+    char name[DOOR_LOCK_MAX_USER_NAME_SIZE + 1];
+    PersistedUserCredential credentials[APP_MAX_CREDENTIALS_PER_USER];
+};
+
+void UserStorageKey(char * key, size_t size, uint16_t index)
+{
+    snprintf(key, size, "aliro/user/%u", static_cast<unsigned>(index));
+}
+
+} // namespace
+
 CHIP_ERROR LockManager::Init(DataModel::Nullable<DlLockState> state, StateChangeCallback callback)
 {
     mStateChangeCallback = callback;
     mState               = !state.IsNull() && state.Value() == DlLockState::kLocked ? kState_LockCompleted : kState_UnlockCompleted;
+
+    return CHIP_NO_ERROR;
+}
+
+CHIP_ERROR LockManager::RestoreUsers()
+{
+    for (uint16_t index = 1; index <= APP_MAX_USERS; ++index)
+    {
+        char key[24];
+        UserStorageKey(key, sizeof(key), index);
+
+        PersistedUser record = {};
+        CHIP_ERROR err = AliroStorage::Load(key, &record, sizeof(record));
+        if (err == CHIP_ERROR_PERSISTED_STORAGE_VALUE_NOT_FOUND)
+        {
+            continue;
+        }
+        ReturnErrorOnFailure(err);
+
+        VerifyOrReturnError(record.version == AliroStorage::kRecordVersion &&
+            record.status != to_underlying(UserStatusEnum::kAvailable) &&
+            record.credentialCount <= APP_MAX_CREDENTIALS_PER_USER &&
+            memchr(record.name, '\0', sizeof(record.name)) != nullptr,
+            CHIP_ERROR_INVALID_ARGUMENT);
+
+        UserSlot & slot = mUsers[index - 1];
+        const size_t nameSize = strlen(record.name);
+        VerifyOrReturnError(nameSize < sizeof(slot.name), CHIP_ERROR_INVALID_ARGUMENT);
+        memcpy(slot.name, record.name, nameSize + 1);
+        slot.credentialCount = record.credentialCount;
+        slot.uniqueId        = record.uniqueId;
+        slot.status          = static_cast<UserStatusEnum>(record.status);
+        slot.type            = static_cast<UserTypeEnum>(record.type);
+        slot.credentialRule  = static_cast<CredentialRuleEnum>(record.credentialRule);
+        slot.createdBy       = static_cast<FabricIndex>(record.createdBy);
+        slot.lastModifiedBy  = static_cast<FabricIndex>(record.lastModifiedBy);
+
+        for (size_t i = 0; i < record.credentialCount; ++i)
+        {
+            slot.credentials[i].credentialType  = static_cast<CredentialTypeEnum>(record.credentials[i].type);
+            slot.credentials[i].credentialIndex = record.credentials[i].index;
+        }
+    }
 
     return CHIP_NO_ERROR;
 }
@@ -183,23 +257,54 @@ bool LockManager::SetUser(EndpointId endpointId, uint16_t userIndex, FabricIndex
 {
     (void) endpointId;
     if (userIndex == 0 || userIndex > APP_MAX_USERS || userName.size() > DOOR_LOCK_MAX_USER_NAME_SIZE ||
-        totalCredentials > APP_MAX_CREDENTIALS_PER_USER || (totalCredentials != 0 && credentials == nullptr))
+        userName.size() >= DOOR_LOCK_USER_NAME_BUFFER_SIZE || totalCredentials > APP_MAX_CREDENTIALS_PER_USER || (totalCredentials != 0 && credentials == nullptr))
     {
         return false;
     }
 
+    char key[24];
+    UserStorageKey(key, sizeof(key), userIndex);
+
     UserSlot & slot = mUsers[userIndex - 1];
     if (userStatus == UserStatusEnum::kAvailable)
     {
+        CHIP_ERROR err = AliroStorage::Remove(key);
+        VerifyOrReturnValue(err == CHIP_NO_ERROR, false,
+            ChipLogError(Zcl, "Failed to delete Door Lock user: %" CHIP_ERROR_FORMAT, err.Format()));
         slot = UserSlot{};
         return true;
     }
 
-    memcpy(slot.name, userName.data(), userName.size());
-    slot.name[userName.size()] = '\0';
-    if (totalCredentials != 0)
+    PersistedUser record = {};
+    record.version        = AliroStorage::kRecordVersion;
+    record.uniqueId       = uniqueId;
+    record.credentialCount = static_cast<uint16_t>(totalCredentials);
+    record.status         = to_underlying(userStatus);
+    record.type           = to_underlying(userType);
+    record.credentialRule = to_underlying(credentialRule);
+    record.createdBy      = creator;
+    record.lastModifiedBy = modifier;
+    if (!userName.empty())
     {
-        memcpy(slot.credentials, credentials, totalCredentials * sizeof(CredentialStruct));
+        memcpy(record.name, userName.data(), userName.size());
+    }
+    record.name[userName.size()] = '\0';
+
+    for (size_t i = 0; i < totalCredentials; ++i)
+    {
+        record.credentials[i].type  = to_underlying(credentials[i].credentialType);
+        record.credentials[i].index = credentials[i].credentialIndex;
+    }
+
+    CHIP_ERROR err = AliroStorage::Save(key, &record, sizeof(record));
+    VerifyOrReturnValue(err == CHIP_NO_ERROR, false,
+        ChipLogError(Zcl, "Failed to save Door Lock user: %" CHIP_ERROR_FORMAT, err.Format()));
+
+    slot = UserSlot{};
+    memcpy(slot.name, record.name, userName.size() + 1);
+    for (size_t i = 0; i < totalCredentials; ++i)
+    {
+        slot.credentials[i] = credentials[i];
     }
     slot.credentialCount = totalCredentials;
     slot.uniqueId        = uniqueId;
@@ -208,6 +313,12 @@ bool LockManager::SetUser(EndpointId endpointId, uint16_t userIndex, FabricIndex
     slot.credentialRule  = credentialRule;
     slot.createdBy       = creator;
     slot.lastModifiedBy  = modifier;
+    CHIP_ERROR startErr = AliroDelegate::GetInstance().StartAliroTransports();
+    if (startErr != CHIP_NO_ERROR)
+    {
+        ChipLogError(Zcl, "Door Lock user saved, Aliro transport start failed: %" CHIP_ERROR_FORMAT, startErr.Format());
+    }
+
     return true;
 }
 
@@ -297,6 +408,27 @@ bool LockManager::ValidateAliroEndpointKey(const ByteSpan & key) const
         {
             if (user.credentials[i].credentialType == credentialType &&
                 user.credentials[i].credentialIndex == credentialIndex)
+            {
+                return true;
+            }
+        }
+    }
+
+    return false;
+}
+
+bool LockManager::HasAliroAuthorizedEndpoint() const
+{
+    for (const auto & user : mUsers)
+    {
+        if (user.status == UserStatusEnum::kAvailable)
+        {
+            continue;
+        }
+
+        for (size_t i = 0; i < user.credentialCount; ++i)
+        {
+            if (AliroDelegate::GetInstance().HasEndpointKey(user.credentials[i].credentialType, user.credentials[i].credentialIndex))
             {
                 return true;
             }
