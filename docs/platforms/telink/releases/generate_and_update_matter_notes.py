@@ -37,7 +37,7 @@ import re
 import shutil
 import subprocess
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Optional
 
 
 class TelinkMatterBuildManager:
@@ -104,7 +104,7 @@ class TelinkMatterBuildManager:
         # target_string is the full build_examples.py target (without the 'telink-' prefix)
         self.build_targets = self._get_build_targets()
 
-    def _get_build_targets(self) -> List[Tuple[str, str, str]]:
+    def _get_build_targets(self) -> list[tuple[str, str, str]]:
         """Define all Matter build targets for Telink platforms.
 
         Returns a list of (board, app_name, target_suffix) tuples where:
@@ -226,12 +226,12 @@ class TelinkMatterBuildManager:
         print(f"Build complete! {success_count} succeeded, {fail_count} failed.")
         print("=" * 80)
 
-    def extract_memory_info(self) -> Dict[str, Dict[str, List[Dict]]]:
+    def extract_memory_info(self) -> dict[str, dict[str, list[dict]]]:
         """Extract memory usage information from build logs.
 
         Returns a nested dict: {family: {board: [{name, memory: [{name,used,size,percent}]}}]}
         """
-        data: Dict[str, Dict[str, List[Dict]]] = {}
+        data: dict[str, dict[str, list[dict]]] = {}
 
         print()
         print("=" * 80)
@@ -275,7 +275,7 @@ class TelinkMatterBuildManager:
                 app_name = target_suffix
 
             # Read the log content
-            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
+            with open(log_file, encoding="utf-8", errors="ignore") as f:
                 content = f.read()
 
             # Find the "Memory region" section (Zephyr output)
@@ -360,7 +360,7 @@ class TelinkMatterBuildManager:
 
         return data
 
-    def update_release_notes(self, data: Dict[str, Dict[str, List[Dict]]]):
+    def update_release_notes(self, data: dict[str, dict[str, list[dict]]]):
         """Update the Telink release note working copy in-place."""
         print()
         print("=" * 80)
@@ -438,7 +438,7 @@ class TelinkMatterBuildManager:
             resource_usage_lines.append("")
 
         # Read the release note and replace the Resource Usage section
-        with open(self.output_path, "r", encoding="utf-8") as f:
+        with open(self.output_path, encoding="utf-8") as f:
             template_lines = f.read().split("\n")
 
         new_lines = []
@@ -486,7 +486,7 @@ class TelinkMatterBuildManager:
             "mcuboot.bin",
         ]
 
-        board_firmware: Dict[str, List[Dict]] = {}
+        board_firmware: dict[str, list[dict]] = {}
 
         for board, app_name, target_suffix in self.build_targets:
             full_target = f"telink-{target_suffix}"
@@ -530,7 +530,7 @@ class TelinkMatterBuildManager:
 
         return board_firmware
 
-    def create_firmware_archives(self, board_firmware: Dict[str, List[Dict]]):
+    def create_firmware_archives(self, board_firmware: dict[str, list[dict]]):
         """Create per-board firmware zip archives."""
         print()
         print("=" * 80)

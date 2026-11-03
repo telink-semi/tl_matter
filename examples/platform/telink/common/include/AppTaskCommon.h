@@ -43,6 +43,14 @@
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 
+#ifndef CONFIG_ACTION_DUAL_MODE
+#define CONFIG_ACTION_DUAL_MODE 1
+#endif
+
+#ifndef CONFIG_AUTO_SWITCH_DUAL_MODE
+#define CONFIG_AUTO_SWITCH_DUAL_MODE 2
+#endif
+
 #define OPCODE_FACTORY_RESET 0
 #define OPCODE_SWITCH_ZIGBEE 1 // include init state and matter paired state.
 #define OPCODE_MATTER_PAIRED 2
@@ -123,6 +131,8 @@ public:
     static void TriggerMicroSpeechCallback();
     static void TriggerMicroSpeechEventHandler(AppEvent * aEvent);
 #endif
+
+    static void ResetDualModeState();
 
 protected:
     CHIP_ERROR InitCommonParts(void);

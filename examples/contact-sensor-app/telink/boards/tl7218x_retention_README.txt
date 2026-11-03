@@ -58,9 +58,9 @@ Output:
   build_tl7218x_retention_lzma_v2/zephyr/merged_dfu.lzma.bin -> DFU over BLE SMP
   build_tl7218x_retention_lzma_v2/zephyr/matter.ota          -> OTA upgrade
 
-3. WARNING: 2MB Flash with OTA but NO LZMA (NOT RECOMMENDED)
------------------------------------------------------------
-**This configuration will show a warning during build and may fail at link time.**
+3. 2MB Flash with OTA but NO LZMA
+---------------------------------
+**This configuration builds successfully for the contact-sensor app.**
 
 Kconfig: boards/tl7218x_retention_ota.conf (explicitly specified)
   - CONFIG_CHIP_OTA_REQUESTOR=y
@@ -71,8 +71,6 @@ Kconfig: boards/tl7218x_retention_ota.conf (explicitly specified)
 **WARNING**: Building this configuration will show a warning:
   "tl7218x with 2MB flash and OTA requires LZMA compression. Please use a config with 'lzma' suffix and set CONFIG_COMPRESS_LZMA=y. Continuing compilation anyway..."
 
-**Note**: Build may fail at link time if firmware size exceeds 916KB (0xe5000) partition limit.
-
-**Solution**: Use the LZMA-enabled configuration (target #2) instead.
+**Note**: LZMA compression (target #2) is still recommended to maximize headroom; without LZMA the firmware must stay within the 916KB (0xe5000) partition limit.
 
 **Important Note**: TL7218X does NOT support dual_mode (Matter + Zigbee) configuration.
