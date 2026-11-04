@@ -20,7 +20,7 @@ set -e
 # Unified Package script for Telink TL3238X/TL7218X Matter firmware
 # This script combines generate, extract, readme, and zip functionality
 #
-# Usage: package_telink_firmware.sh [--build] [--extract] [--readme] [--zip] [--all] [--lighting] [--switch] [--tl3238x] [--tl5218x] [--tl7218x] [target1 target2...]
+# Usage: package_telink_firmware.sh [--build] [--extract] [--readme] [--zip] [--all] [--lighting] [--switch] [--contact] [--tl3238x] [--tl5218x] [--tl7218x] [target1 target2...]
 #
 # --build      : Build firmware targets
 # --extract    : Extract firmware from build directories
@@ -47,11 +47,13 @@ set -e
 #       - build_tl3238x_retention_lzma_v2
 #       - build_tl3238x_retention_dual_mode
 #
-#     Contact Sensor App:
+#     Contact Sensor App (opt-in via --contact):
+#       - build_tl3238x_retention_contact_default
 #       - build_tl3238x_retention_contact_v1
 #       - build_tl3238x_retention_contact_v2
 #       - build_tl3238x_retention_contact_lzma_v1
 #       - build_tl3238x_retention_contact_lzma_v2
+#       - build_tl3238x_retention_contact_dual_mode
 #
 #   TL5218X:
 #     Lighting App:
@@ -66,11 +68,13 @@ set -e
 #       - build_tl5218x_retention_lzma_v2
 #       - build_tl5218x_retention_dual_mode
 #
-#     Contact Sensor App:
+#     Contact Sensor App (opt-in via --contact):
+#       - build_tl5218x_retention_contact_default
 #       - build_tl5218x_retention_contact_v1
 #       - build_tl5218x_retention_contact_v2
 #       - build_tl5218x_retention_contact_lzma_v1
 #       - build_tl5218x_retention_contact_lzma_v2
+#       - build_tl5218x_retention_contact_dual_mode
 #
 #   TL7218X:
 #     Lighting App:
@@ -82,8 +86,12 @@ set -e
 #       - build_tl7218x_retention_default
 #       - build_tl7218x_retention_lzma_v1
 #       - build_tl7218x_retention_lzma_v2
+#       - build_tl7218x_retention_concurrent_off
+#       - build_tl7218x_retention_concurrent_off_ota_v1
+#       - build_tl7218x_retention_concurrent_off_ota_v2
 #
-#     Contact Sensor App:
+#     Contact Sensor App (opt-in via --contact):
+#       - build_tl7218x_retention_contact_default
 #       - build_tl7218x_retention_contact_v1
 #       - build_tl7218x_retention_contact_v2
 #       - build_tl7218x_retention_contact_lzma_v1
@@ -187,7 +195,7 @@ fi
 if [ "$DO_BUILD" = true ] && [ ${#TARGETS[@]} -eq 0 ]; then
     GENERATE_LIGHTING=true
     GENERATE_SWITCH=true
-    GENERATE_CONTACT=true
+    # contact-sensor is opt-in via --contact (not built/packaged by default)
     GENERATE_TL3238X=true
     GENERATE_TL5218X=true
     GENERATE_TL7218X=true
@@ -385,9 +393,9 @@ generate_lighting_app() {
             echo "Generate directory: $BUILD_DIR"
 
             # Copy lighting app specific Zigbee firmware
-            if [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/dual_matter_sampleLight_bleAdv_tl323x.bin" ]; then
-                cp "$ZEPHYR_BASE/TL323X_FW/ZB/dual_matter_sampleLight_bleAdv_tl323x.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
-                echo "Copied dual_matter_sampleLight_bleAdv_tl323x.bin to Zigbee-SampleDemo.bin"
+            if [ -f "$ZEPHYR_BASE/TL521X_FW/ZB/zigbee_bleAdv_sampleLight_tl521x.bin" ]; then
+                cp "$ZEPHYR_BASE/TL521X_FW/ZB/zigbee_bleAdv_sampleLight_tl521x.bin" "$ZEPHYR_BASE/TL521X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied zigbee_bleAdv_sampleLight_tl521x.bin to Zigbee-SampleDemo.bin"
             fi
 
             west build -p -b tl5218x -d "$BUILD_DIR" -- \
@@ -482,6 +490,9 @@ generate_light_switch() {
             elif [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x-bak.bin" ]; then
                 cp "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x-bak.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
                 echo "Copied sampleSwitch_tl323x-bak.bin to Zigbee-SampleDemo.bin"
+            else
+                echo "ERROR: TL323X light-switch Zigbee firmware not found (sampleSwitch_tl323x_log.bin / sampleSwitch_tl323x-bak.bin)"
+                exit 1
             fi
 
             west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
@@ -529,12 +540,15 @@ generate_light_switch() {
             echo "Generate directory: $BUILD_DIR"
 
             # Copy light-switch app specific Zigbee firmware
-            if [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x_log.bin" ]; then
-                cp "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x_log.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
-                echo "Copied sampleSwitch_tl323x_log.bin to Zigbee-SampleDemo.bin"
-            elif [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x-bak.bin" ]; then
-                cp "$ZEPHYR_BASE/TL323X_FW/ZB/sampleSwitch_tl323x-bak.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
-                echo "Copied sampleSwitch_tl323x-bak.bin to Zigbee-SampleDemo.bin"
+            if [ -f "$ZEPHYR_BASE/TL521X_FW/ZB/sampleSwitch_tl521x_log.bin" ]; then
+                cp "$ZEPHYR_BASE/TL521X_FW/ZB/sampleSwitch_tl521x_log.bin" "$ZEPHYR_BASE/TL521X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleSwitch_tl521x_log.bin to Zigbee-SampleDemo.bin"
+            elif [ -f "$ZEPHYR_BASE/TL521X_FW/ZB/sampleSwitch_tl521x-bak.bin" ]; then
+                cp "$ZEPHYR_BASE/TL521X_FW/ZB/sampleSwitch_tl521x-bak.bin" "$ZEPHYR_BASE/TL521X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleSwitch_tl521x-bak.bin to Zigbee-SampleDemo.bin"
+            else
+                echo "ERROR: TL521X light-switch Zigbee firmware not found (sampleSwitch_tl521x_log.bin / sampleSwitch_tl521x-bak.bin)"
+                exit 1
             fi
 
             west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
@@ -574,6 +588,38 @@ generate_light_switch() {
                 -DCONF_FILE="prj.conf;boards/tl7218x_retention_ota_lzma.conf" \
                 2>&1 | tee "$BUILD_DIR.log"
         fi
+
+        if should_generate build_tl7218x_retention_concurrent_off; then
+            BUILD_DIR="build_tl7218x_retention_concurrent_off_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Concurrent mode, disable BLE after commissioning, no OTA) ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_concurrent.conf;boards/tl7218x_retention_ble_off.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_retention_concurrent_off_ota_v1; then
+            BUILD_DIR="build_tl7218x_retention_concurrent_off_ota_v1_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Concurrent mode, disable BLE after commissioning, OTA LZMA) - v1 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=1 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_concurrent.conf;boards/tl7218x_retention_ble_off.conf;boards/tl7218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_retention_concurrent_off_ota_v2; then
+            BUILD_DIR="build_tl7218x_retention_concurrent_off_ota_v2_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Concurrent mode, disable BLE after commissioning, OTA LZMA) - v2 ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
+                -DCONF_FILE="prj.conf;boards/tl7218x_retention_concurrent.conf;boards/tl7218x_retention_ble_off.conf;boards/tl7218x_retention_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
     fi
 }
 
@@ -584,6 +630,15 @@ generate_contact_sensor() {
     cd "$CONTACT_SENSOR_APP_DIR"
 
     if [ "$GENERATE_TL3238X" = true ]; then
+        if should_generate build_tl3238x_retention_contact_default; then
+            BUILD_DIR="build_tl3238x_retention_contact_default_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter only, default config) ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
         if should_generate build_tl3238x_retention_contact_v1; then
             BUILD_DIR="build_tl3238x_retention_contact_v1_$DATE"
             echo ""
@@ -627,9 +682,41 @@ generate_contact_sensor() {
                 -DCONF_FILE="prj.conf;boards/tl3238x_retention_ota_lzma.conf" \
                 2>&1 | tee "$BUILD_DIR.log"
         fi
+
+        if should_generate build_tl3238x_retention_contact_dual_mode; then
+            BUILD_DIR="build_tl3238x_retention_contact_dual_mode_$DATE"
+            echo ""
+            echo "=== TL3238X: 2MB Flash (Matter + Zigbee dual mode, LZMA compressed, enable BT DFU) ==="
+            echo "Generate directory: $BUILD_DIR"
+
+            # Copy contact-sensor app specific Zigbee firmware
+            if [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/sampleContact_tl323x_log.bin" ]; then
+                cp "$ZEPHYR_BASE/TL323X_FW/ZB/sampleContact_tl323x_log.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleContact_tl323x_log.bin to Zigbee-SampleDemo.bin"
+            elif [ -f "$ZEPHYR_BASE/TL323X_FW/ZB/sampleContact_tl323x-bak.bin" ]; then
+                cp "$ZEPHYR_BASE/TL323X_FW/ZB/sampleContact_tl323x-bak.bin" "$ZEPHYR_BASE/TL323X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleContact_tl323x-bak.bin to Zigbee-SampleDemo.bin"
+            else
+                echo "ERROR: TL323X contact-sensor Zigbee firmware not found (sampleContact_tl323x_log.bin / sampleContact_tl323x-bak.bin)"
+                exit 1
+            fi
+
+            west build -p -b tl3238x_retention -d "$BUILD_DIR" -- \
+                -DCONF_FILE="prj.conf;boards/tl3238x_retention_dual_mode_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
     fi
 
     if [ "$GENERATE_TL5218X" = true ]; then
+        if should_generate build_tl5218x_retention_contact_default; then
+            BUILD_DIR="build_tl5218x_retention_contact_default_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter only, default config) ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
         if should_generate build_tl5218x_retention_contact_v1; then
             BUILD_DIR="build_tl5218x_retention_contact_v1_$DATE"
             echo ""
@@ -673,9 +760,41 @@ generate_contact_sensor() {
                 -DCONF_FILE="prj.conf;boards/tl5218x_retention_ota_lzma.conf" \
                 2>&1 | tee "$BUILD_DIR.log"
         fi
+
+        if should_generate build_tl5218x_retention_contact_dual_mode; then
+            BUILD_DIR="build_tl5218x_retention_contact_dual_mode_$DATE"
+            echo ""
+            echo "=== TL5218X: 2MB Flash (Matter + Zigbee dual mode, LZMA compressed, enable BT DFU) ==="
+            echo "Generate directory: $BUILD_DIR"
+
+            # Copy contact-sensor app specific Zigbee firmware
+            if [ -f "$ZEPHYR_BASE/TL521X_FW/ZB/sampleContact_tl521x_log.bin" ]; then
+                cp "$ZEPHYR_BASE/TL521X_FW/ZB/sampleContact_tl521x_log.bin" "$ZEPHYR_BASE/TL521X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleContact_tl521x_log.bin to Zigbee-SampleDemo.bin"
+            elif [ -f "$ZEPHYR_BASE/TL521X_FW/ZB/sampleContact_tl521x-bak.bin" ]; then
+                cp "$ZEPHYR_BASE/TL521X_FW/ZB/sampleContact_tl521x-bak.bin" "$ZEPHYR_BASE/TL521X_FW/ZB/Zigbee-SampleDemo.bin"
+                echo "Copied sampleContact_tl521x-bak.bin to Zigbee-SampleDemo.bin"
+            else
+                echo "ERROR: TL521X contact-sensor Zigbee firmware not found (sampleContact_tl521x_log.bin / sampleContact_tl521x-bak.bin)"
+                exit 1
+            fi
+
+            west build -p -b tl5218x_retention -d "$BUILD_DIR" -- \
+                -DCONF_FILE="prj.conf;boards/tl5218x_retention_dual_mode_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
     fi
 
     if [ "$GENERATE_TL7218X" = true ]; then
+        if should_generate build_tl7218x_retention_contact_default; then
+            BUILD_DIR="build_tl7218x_retention_contact_default_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Matter only, default config) ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x_retention -d "$BUILD_DIR" -- \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
         if should_generate build_tl7218x_retention_contact_v1; then
             BUILD_DIR="build_tl7218x_retention_contact_v1_$DATE"
             echo ""
@@ -765,9 +884,11 @@ extract_firmware() {
     mkdir -p "$PKG_DIR/feature-test/lighting/tl3238x"
     mkdir -p "$PKG_DIR/feature-test/lighting/tl5218x"
     mkdir -p "$PKG_DIR/feature-test/lighting/tl7218x"
-    mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl3238x"
-    mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl5218x"
-    mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl7218x"
+    if [ "$GENERATE_CONTACT" = true ]; then
+        mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl3238x"
+        mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl5218x"
+        mkdir -p "$PKG_DIR/feature-test/contact-sensor/tl7218x"
+    fi
     echo "Package directory: $PKG_DIR"
     echo "$PKG_DIR" >"$BASE_PKG_DIR/.last_pkg_dir"
 
@@ -968,85 +1089,88 @@ extract_firmware() {
         echo "Copied from $BUILD_72_RET_LZMA_V2: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_lzma_v2_dfu.lzma.bin"
     fi
 
-    echo ""
-    echo "=== Copying Contact Sensor App files (TL3238X) ==="
-    if [ -n "$BUILD_32_CS_V1" ] && [ -f "$BUILD_32_CS_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_32_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v1.bin"
-        echo "Copied from $BUILD_32_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v1.bin"
-    fi
-    if [ -n "$BUILD_32_CS_V2" ] && [ -f "$BUILD_32_CS_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_32_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_ota.ota"
-        echo "Copied from $BUILD_32_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_32_CS_V2" ] && [ -f "$BUILD_32_CS_V2/zephyr/merged_dfu.bin" ]; then
-        cp "$BUILD_32_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_dfu.bin"
-        echo "Copied from $BUILD_32_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_dfu.bin"
-    fi
-    if [ -n "$BUILD_32_CS_LZMA_V1" ] && [ -f "$BUILD_32_CS_LZMA_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_32_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v1.bin"
-        echo "Copied from $BUILD_32_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v1.bin"
-    fi
-    if [ -n "$BUILD_32_CS_LZMA_V2" ] && [ -f "$BUILD_32_CS_LZMA_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_32_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-        echo "Copied from $BUILD_32_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_32_CS_LZMA_V2" ] && [ -f "$BUILD_32_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
-        cp "$BUILD_32_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
-        echo "Copied from $BUILD_32_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
-    fi
+    if [ "$GENERATE_CONTACT" = true ]; then
 
-    echo ""
-    echo "=== Copying Contact Sensor App files (TL5218X) ==="
-    if [ -n "$BUILD_52_CS_V1" ] && [ -f "$BUILD_52_CS_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_52_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v1.bin"
-        echo "Copied from $BUILD_52_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v1.bin"
-    fi
-    if [ -n "$BUILD_52_CS_V2" ] && [ -f "$BUILD_52_CS_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_52_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_ota.ota"
-        echo "Copied from $BUILD_52_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_52_CS_V2" ] && [ -f "$BUILD_52_CS_V2/zephyr/merged_dfu.bin" ]; then
-        cp "$BUILD_52_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_dfu.bin"
-        echo "Copied from $BUILD_52_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_dfu.bin"
-    fi
-    if [ -n "$BUILD_52_CS_LZMA_V1" ] && [ -f "$BUILD_52_CS_LZMA_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_52_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v1.bin"
-        echo "Copied from $BUILD_52_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v1.bin"
-    fi
-    if [ -n "$BUILD_52_CS_LZMA_V2" ] && [ -f "$BUILD_52_CS_LZMA_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_52_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-        echo "Copied from $BUILD_52_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_52_CS_LZMA_V2" ] && [ -f "$BUILD_52_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
-        cp "$BUILD_52_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
-        echo "Copied from $BUILD_52_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
-    fi
+        echo ""
+        echo "=== Copying Contact Sensor App files (TL3238X) ==="
+        if [ -n "$BUILD_32_CS_V1" ] && [ -f "$BUILD_32_CS_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_32_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v1.bin"
+            echo "Copied from $BUILD_32_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v1.bin"
+        fi
+        if [ -n "$BUILD_32_CS_V2" ] && [ -f "$BUILD_32_CS_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_32_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_ota.ota"
+            echo "Copied from $BUILD_32_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_32_CS_V2" ] && [ -f "$BUILD_32_CS_V2/zephyr/merged_dfu.bin" ]; then
+            cp "$BUILD_32_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_dfu.bin"
+            echo "Copied from $BUILD_32_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_v2_dfu.bin"
+        fi
+        if [ -n "$BUILD_32_CS_LZMA_V1" ] && [ -f "$BUILD_32_CS_LZMA_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_32_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v1.bin"
+            echo "Copied from $BUILD_32_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v1.bin"
+        fi
+        if [ -n "$BUILD_32_CS_LZMA_V2" ] && [ -f "$BUILD_32_CS_LZMA_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_32_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+            echo "Copied from $BUILD_32_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_32_CS_LZMA_V2" ] && [ -f "$BUILD_32_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
+            cp "$BUILD_32_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+            echo "Copied from $BUILD_32_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl3238x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+        fi
 
-    echo ""
-    echo "=== Copying Contact Sensor App files (TL7218X) ==="
-    if [ -n "$BUILD_72_CS_V1" ] && [ -f "$BUILD_72_CS_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_72_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v1.bin"
-        echo "Copied from $BUILD_72_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v1.bin"
-    fi
-    if [ -n "$BUILD_72_CS_V2" ] && [ -f "$BUILD_72_CS_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_72_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_ota.ota"
-        echo "Copied from $BUILD_72_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_72_CS_V2" ] && [ -f "$BUILD_72_CS_V2/zephyr/merged_dfu.bin" ]; then
-        cp "$BUILD_72_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_dfu.bin"
-        echo "Copied from $BUILD_72_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_dfu.bin"
-    fi
-    if [ -n "$BUILD_72_CS_LZMA_V1" ] && [ -f "$BUILD_72_CS_LZMA_V1/zephyr/merged.bin" ]; then
-        cp "$BUILD_72_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v1.bin"
-        echo "Copied from $BUILD_72_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v1.bin"
-    fi
-    if [ -n "$BUILD_72_CS_LZMA_V2" ] && [ -f "$BUILD_72_CS_LZMA_V2/zephyr/matter.ota" ]; then
-        cp "$BUILD_72_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-        echo "Copied from $BUILD_72_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
-    fi
-    if [ -n "$BUILD_72_CS_LZMA_V2" ] && [ -f "$BUILD_72_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
-        cp "$BUILD_72_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
-        echo "Copied from $BUILD_72_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+        echo ""
+        echo "=== Copying Contact Sensor App files (TL5218X) ==="
+        if [ -n "$BUILD_52_CS_V1" ] && [ -f "$BUILD_52_CS_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_52_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v1.bin"
+            echo "Copied from $BUILD_52_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v1.bin"
+        fi
+        if [ -n "$BUILD_52_CS_V2" ] && [ -f "$BUILD_52_CS_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_52_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_ota.ota"
+            echo "Copied from $BUILD_52_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_52_CS_V2" ] && [ -f "$BUILD_52_CS_V2/zephyr/merged_dfu.bin" ]; then
+            cp "$BUILD_52_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_dfu.bin"
+            echo "Copied from $BUILD_52_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_v2_dfu.bin"
+        fi
+        if [ -n "$BUILD_52_CS_LZMA_V1" ] && [ -f "$BUILD_52_CS_LZMA_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_52_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v1.bin"
+            echo "Copied from $BUILD_52_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v1.bin"
+        fi
+        if [ -n "$BUILD_52_CS_LZMA_V2" ] && [ -f "$BUILD_52_CS_LZMA_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_52_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+            echo "Copied from $BUILD_52_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_52_CS_LZMA_V2" ] && [ -f "$BUILD_52_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
+            cp "$BUILD_52_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+            echo "Copied from $BUILD_52_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl5218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+        fi
+
+        echo ""
+        echo "=== Copying Contact Sensor App files (TL7218X) ==="
+        if [ -n "$BUILD_72_CS_V1" ] && [ -f "$BUILD_72_CS_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_72_CS_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v1.bin"
+            echo "Copied from $BUILD_72_CS_V1: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v1.bin"
+        fi
+        if [ -n "$BUILD_72_CS_V2" ] && [ -f "$BUILD_72_CS_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_72_CS_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_ota.ota"
+            echo "Copied from $BUILD_72_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_72_CS_V2" ] && [ -f "$BUILD_72_CS_V2/zephyr/merged_dfu.bin" ]; then
+            cp "$BUILD_72_CS_V2/zephyr/merged_dfu.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_dfu.bin"
+            echo "Copied from $BUILD_72_CS_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_v2_dfu.bin"
+        fi
+        if [ -n "$BUILD_72_CS_LZMA_V1" ] && [ -f "$BUILD_72_CS_LZMA_V1/zephyr/merged.bin" ]; then
+            cp "$BUILD_72_CS_LZMA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v1.bin"
+            echo "Copied from $BUILD_72_CS_LZMA_V1: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v1.bin"
+        fi
+        if [ -n "$BUILD_72_CS_LZMA_V2" ] && [ -f "$BUILD_72_CS_LZMA_V2/zephyr/matter.ota" ]; then
+            cp "$BUILD_72_CS_LZMA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+            echo "Copied from $BUILD_72_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_ota.ota"
+        fi
+        if [ -n "$BUILD_72_CS_LZMA_V2" ] && [ -f "$BUILD_72_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
+            cp "$BUILD_72_CS_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+            echo "Copied from $BUILD_72_CS_LZMA_V2: $PKG_DIR/feature-test/contact-sensor/tl7218x/contact-sensor-app_2m_flash_lzma_v2_dfu.lzma.bin"
+        fi
     fi
 
     echo ""
