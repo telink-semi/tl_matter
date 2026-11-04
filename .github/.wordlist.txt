@@ -185,6 +185,7 @@ BTN
 BTP
 btvirt
 BuildKit
+buildable
 buildwithmatter
 buildX
 burndown
