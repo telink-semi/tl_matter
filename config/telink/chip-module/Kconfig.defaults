@@ -83,8 +83,8 @@ config ISR_STACK_SIZE
     default 1024 if PM || SOC_RISCV_TELINK_TL321X || SOC_RISCV_TELINK_TL323X || SOC_RISCV_TELINK_TL521X || SOC_RISCV_TELINK_TL721X || SOC_RISCV_TELINK_W91
 
 config SYSTEM_WORKQUEUE_STACK_SIZE
-    default 664 if PM && !SOC_RISCV_TELINK_W91
-    default 2048
+    default 1024 if PM && !SOC_RISCV_TELINK_W91
+    default 2048 if SOC_FAMILY_TELINK_TLX
 
 config HEAP_MEM_POOL_SIZE
     default 256 if ZEPHYR_VERSION_3_3
@@ -426,7 +426,7 @@ config NET_TX_STACK_SIZE
 config NET_RX_STACK_SIZE
     default 2048 if SOC_RISCV_TELINK_W91
     default 664 if PM || SOC_RISCV_TELINK_TL321X
-    default 2048
+    default 2048 if SOC_FAMILY_TELINK_TLX
 
 # Disable certain parts of Zephyr IPv6 stack
 config NET_IPV6_NBR_CACHE
