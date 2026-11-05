@@ -49,7 +49,7 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/version.h>
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING)
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) || defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
 #include <zephyr/settings/settings.h>
 #endif
 

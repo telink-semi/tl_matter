@@ -157,9 +157,9 @@ private:
 
     friend BLEManager & BLEMgr(void);
     friend BLEManagerImpl & BLEMgrImpl(void);
+    bool mBLERadioInitialized = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
     friend class InitScanCallback;
-    bool mBLERadioInitialized = false;
 
     enum class PrescanState : uint8_t
     {
