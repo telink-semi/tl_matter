@@ -334,7 +334,7 @@ void BLEManagerImpl::DriveBLEState(intptr_t arg)
     BLEMgrImpl().DriveBLEState();
 }
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
     !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 {
@@ -346,7 +346,7 @@ void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 }
 #endif
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
 {
     /* Thread must be attached before the RF handover; retry until it is. */
@@ -1103,7 +1103,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         err = HandleTXCharComplete(event);
         break;
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     case DeviceEventType::kCommissioningComplete:
         // One-way BLE teardown after commissioning. CommissioningWindowManager::Cleanup()
         // (application layer, runs after the device layer on this same event) stops
@@ -1111,7 +1111,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         // Thread/CASE traffic settle before the RF handover.
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
         break;
-#elif defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE)
+#elif CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
     case DeviceEventType::kCommissioningComplete:
         // Concurrent mode: re-enable BLE advertising after commissioning completes.
         // ScheduleWork defers this until after CommissioningWindowManager::Cleanup()

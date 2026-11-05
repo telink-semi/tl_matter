@@ -133,11 +133,11 @@ private:
     CHIP_ERROR UnregisterGattService();
 
     static void DriveBLEState(intptr_t arg);
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
     !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     static void HandleConcurrentModeReAdv(intptr_t arg);
 #endif
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     /* k_work handler: runs in Zephyr sysworkq; only a delayed retry trigger
      * that defers the teardown state machine to the CHIP task. */
     static void HandleBleTeardownWork(struct k_work * work);

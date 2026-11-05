@@ -113,7 +113,7 @@ bool sIsNetworkEnabled     = false;
 bool sIsNetworkAttached    = false;
 bool sHaveBLEConnections   = false;
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
     !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void EnablePostCommissioningBle(intptr_t)
 {
@@ -679,13 +679,13 @@ CHIP_ERROR AppTaskCommon::InitCommonParts(void)
     }
 #endif
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
     // Telink concurrent mode: apply the BLE advertising policy for an
     // already-commissioned device. The common Server::Init() disables BLE
     // advertising after boot; re-enable it only for pure concurrent mode.
     if (chip::Server::GetInstance().GetFabricTable().FabricCount() != 0)
     {
-#ifdef CONFIG_CHIP_CONCURRENT_BLE_IDLE
+#if CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
         // Concurrent mode with idle BLE: leave BLE stack initialized but do not
         // auto-start advertising. The user can start it later (e.g. via button).
         LOG_INF("Fabric already commissioned. BLE idle in concurrent mode");
@@ -699,7 +699,7 @@ CHIP_ERROR AppTaskCommon::InitCommonParts(void)
         LogErrorOnFailure(PlatformMgr().ScheduleWork(EnablePostCommissioningBle, 0));
 #endif
     }
-#endif // CONFIG_CHIP_CONCURRENT_MODE
+#endif // CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
 
     ConfigurationMgr().LogDeviceConfig();
     PrintOnboardingCodes(chip::RendezvousInformationFlags(chip::RendezvousInformationFlag::kBLE));
