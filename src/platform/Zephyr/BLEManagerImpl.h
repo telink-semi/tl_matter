@@ -25,6 +25,7 @@
 
 #if CHIP_DEVICE_CONFIG_ENABLE_CHIPOBLE
 
+#include <platform/NetworkCommissioning.h>
 #include <platform/Zephyr/BLEAdvertisingArbiter.h>
 
 #include <zephyr/bluetooth/bluetooth.h>
@@ -36,6 +37,9 @@ namespace DeviceLayer {
 namespace Internal {
 
 using namespace chip::Ble;
+
+#define CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION \
+    (CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION)
 
 /**
  * Concrete implementation of the BLEManager singleton object for the Zephyr platforms.
@@ -143,6 +147,18 @@ private:
 
     friend BLEManager & BLEMgr(void);
     friend BLEManagerImpl & BLEMgrImpl(void);
+#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+    friend class InitScanCallback;
+    bool mBLERadioInitialized = false;
+
+    enum class PrescanState : uint8_t
+    {
+        kIdle,
+        kInProgress,
+        kCompleted,
+    };
+    PrescanState mPrescanState = PrescanState::kIdle;
+#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
 
     static BLEManagerImpl sInstance;
 
@@ -164,6 +180,20 @@ public:
     void SetCustomScanResponse(Span<bt_data> CustomScanResponse);
 #endif
 };
+
+#if CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION
+class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
+{
+public:
+    void OnFinished(NetworkCommissioning::Status err, CharSpan debugText,
+                    NetworkCommissioning::ThreadScanResponseIterator * networks) override
+    {
+        BLEManagerImpl & mBLEManagerImpl = BLEMgrImpl();
+        mBLEManagerImpl.mPrescanState = BLEManagerImpl::PrescanState::kCompleted;
+        TEMPORARY_RETURN_IGNORED mBLEManagerImpl.StartAdvertising();
+    };
+};
+#endif /* CHIP_DEVICE_CONFIG_UNCONCURRENT_CONNECTION */
 
 /**
  * Returns a reference to the public interface of the BLEManager singleton object.
