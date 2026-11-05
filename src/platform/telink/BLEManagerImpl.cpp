@@ -359,7 +359,7 @@ void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
     }
 
     /* Defer the teardown state machine to the CHIP task so the BLE state
-     * (mGAPConns / mFlags / advertising) is accessed under the CHIP stack lock. */
+     * (mTotalConnNum / mFlags / advertising) is accessed under the CHIP stack lock. */
     TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(DoBleTeardown, 0);
 }
 
@@ -372,7 +372,7 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
 
     /* A BLE connection is still active (e.g. Channel Sounding client):
      * do not tear the stack down from under it. */
-    if (sInstance.mGAPConns > 0)
+    if (sInstance.mTotalConnNum > 0)
     {
         ChipLogDetail(DeviceLayer, "BLE teardown: BLE connection active, retry in 5s");
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(5));
