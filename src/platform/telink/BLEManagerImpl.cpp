@@ -414,6 +414,16 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
         ChipLogError(DeviceLayer, "bt_disable failed (%d), continue with 802.15.4 revival", err);
     }
 
+    /* bt_disable() tears down the BLE host: the CHIPoBLE/RAS GATT services and
+     * any in-flight advertising are gone. Clear the corresponding flags so the
+     * state machine re-registers / re-advertises after a later resume (otherwise
+     * StartAdvertisingProcess() would skip GATT re-registration). */
+    sInstance.mFlags.Clear(Flags::kChipoBleGattServiceRegister);
+    sInstance.mFlags.Clear(Flags::kAdvertising);
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
+    sInstance.mFlags.Clear(Flags::kRasGattServiceRegistered);
+#endif
+
     /* RF is now reset by the controller deinit: restore it for 802.15.4 and
      * latch permanent ownership. In the BLE-off policy this is one-way; in the
      * resume policy ResumeBleAfterTeardown() can hand the RF back later. */
