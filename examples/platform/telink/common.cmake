@@ -74,13 +74,13 @@ elseif("${BOARD}" STREQUAL "tl7218x_ml7m")
   set(ML_CONF_OVERLAY_FILE "${CHIP_ROOT}/src/platform/telink/${BOARD}.conf")
   if(NOT EXISTS "${ML_CONF_OVERLAY_FILE}")
     message(FATAL_ERROR "${ML_CONF_OVERLAY_FILE} doesn't exist")
-  endif() 
+  endif()
 elseif("${BOARD}" STREQUAL "tl3218x_ml3m")
   set(ML_CONF_OVERLAY_FILE "${CHIP_ROOT}/src/platform/telink/${BOARD}.conf")
   if(NOT EXISTS "${ML_CONF_OVERLAY_FILE}")
     message(FATAL_ERROR "${ML_CONF_OVERLAY_FILE} doesn't exist")
-  endif() 
-  else()
+  endif()
+else()
   unset(ML_CONF_OVERLAY_FILE)
 endif()
 
@@ -126,8 +126,42 @@ else()
   unset(USB_CONF_OVERLAY_FILE)
 endif()
 
-# Check if there is any lzma conf file in CONF_FILE，or check CONFIG_COMPRESS_LZMA
-if(("${CONF_FILE}" MATCHES "lzma") OR (${CONFIG_COMPRESS_LZMA} MATCHES y))
+set(LOCAL_BOARD_CONF_FILE "${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD}.conf")
+if(NOT EXISTS "${LOCAL_BOARD_CONF_FILE}")
+  message(STATUS "${LOCAL_BOARD_CONF_FILE} doesn't exist")
+  unset(LOCAL_BOARD_CONF_FILE)
+endif()
+
+# Set the default config files before checking LZMA.
+if(NOT CONF_FILE)
+  set(CONF_FILE ${USB_CONF_OVERLAY_FILE} ${MARS_CONF_OVERLAY_FILE} ${ZEPHYR_VERSION_OVERLAY_FILE} prj.conf ${TFLM_CONF_OVERLAY_FILE} ${ML_CONF_OVERLAY_FILE} ${LOCAL_BOARD_CONF_FILE})
+endif()
+
+# Read the LZMA setting before Zephyr loads Kconfig.
+set(LZMA_KCONFIG "")
+set(LZMA_CONF_NAME OFF)
+string(REPLACE " " ";" LZMA_CONF_FILES "${CONF_FILE};${EXTRA_CONF_FILE}")
+foreach(conf_file IN LISTS LZMA_CONF_FILES)
+  if(NOT conf_file)
+    continue()
+  endif()
+  get_filename_component(conf_name "${conf_file}" NAME)
+  if(conf_name MATCHES "lzma")
+    set(LZMA_CONF_NAME ON)
+  endif()
+  if(NOT IS_ABSOLUTE "${conf_file}")
+    set(conf_file "${CMAKE_CURRENT_SOURCE_DIR}/${conf_file}")
+  endif()
+  if(EXISTS "${conf_file}")
+    file(STRINGS "${conf_file}" lzma_settings REGEX "^(CONFIG_COMPRESS_LZMA=[yn]|# CONFIG_COMPRESS_LZMA is not set)$")
+    if(lzma_settings)
+      list(GET lzma_settings -1 LZMA_KCONFIG)
+    endif()
+  endif()
+endforeach()
+
+if((${CONFIG_COMPRESS_LZMA} MATCHES y) OR (LZMA_KCONFIG STREQUAL "CONFIG_COMPRESS_LZMA=y") OR
+   (LZMA_CONF_NAME AND LZMA_KCONFIG STREQUAL "" AND NOT CONFIG_COMPRESS_LZMA STREQUAL "n"))
   set(BOOT_CONF_OVERLAY_FILE "${CHIP_ROOT}/config/telink/app/bootloader_compress_lzma.conf")
   set(FLASH_LAYOUT_SUFFIX "_lzma")
 else()
@@ -155,12 +189,6 @@ if(NOT EXISTS "${LOCAL_DTC_OVERLAY_FILE}")
   unset(LOCAL_DTC_OVERLAY_FILE)
 endif()
 
-set(LOCAL_BOARD_CONF_FILE "${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD}.conf")
-if(NOT EXISTS "${LOCAL_BOARD_CONF_FILE}")
-  message(STATUS "${LOCAL_BOARD_CONF_FILE} doesn't exist")
-  unset(LOCAL_BOARD_CONF_FILE)
-endif()
-
 set(GLOBAL_BOOT_DTC_OVERLAY_FILE "${CHIP_ROOT}/src/platform/telink/${BASE_BOARD}.overlay")
 if(NOT EXISTS "${GLOBAL_BOOT_DTC_OVERLAY_FILE}")
   message(STATUS "${GLOBAL_BOOT_DTC_OVERLAY_FILE} doesn't exist")
@@ -183,6 +211,7 @@ endif()
 
 # Always use overlay with FLASH_LAYOUT_SUFFIX, for all boards and configurations
 set(FLASH_DTC_OVERLAY_FILE "${CHIP_ROOT}/src/platform/telink/${BASE_BOARD}_${FLASH_SIZE}_flash${FLASH_LAYOUT_SUFFIX}.overlay")
+message(STATUS "Telink flash overlay: ${FLASH_DTC_OVERLAY_FILE}")
 if(NOT EXISTS "${FLASH_DTC_OVERLAY_FILE}")
   message(STATUS "${FLASH_DTC_OVERLAY_FILE} doesn't exist")
   unset(FLASH_DTC_OVERLAY_FILE)
@@ -197,17 +226,13 @@ else()
   set(DTC_OVERLAY_FILE ${GLOBAL_DTC_OVERLAY_FILE} ${USB_DTC_OVERLAY_FILE} ${MARS_DTC_OVERLAY_FILE} ${FLASH_DTC_OVERLAY_FILE} ${LOCAL_DTC_OVERLAY_FILE} ${TFLM_OVERLAY_FILE} ${NFC_ONBOARDING_PAYLOAD_OVERLAY_FILE})
 endif()
 
-if(NOT CONF_FILE)
-set(CONF_FILE ${USB_CONF_OVERLAY_FILE} ${MARS_CONF_OVERLAY_FILE} ${ZEPHYR_VERSION_OVERLAY_FILE} prj.conf ${TFLM_CONF_OVERLAY_FILE} ${ML_CONF_OVERLAY_FILE} ${LOCAL_BOARD_CONF_FILE})
-endif()
-
 # Load NCS/Zephyr build system
 list(APPEND ZEPHYR_EXTRA_MODULES ${CHIP_ROOT}/config/telink/chip-module)
 find_package(Zephyr HINTS $ENV{ZEPHYR_BASE})
 
 # deep-sleep platform workaround
 if(CONFIG_PM AND (CONFIG_SOC_SERIES_RISCV_TELINK_B9X_RETENTION OR CONFIG_SOC_SERIES_RISCV_TELINK_TLX_RETENTION))
-zephyr_link_libraries(
-  -Wl,--wrap,bt_is_ready
-)
+  zephyr_link_libraries(
+    -Wl,--wrap,bt_is_ready
+  )
 endif()

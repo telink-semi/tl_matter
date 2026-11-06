@@ -180,7 +180,7 @@ jobs:
             - name: Update Zephyr version 4.1.0 (dev-tlk_v4.1) to specific revision (for developers purpose)
               shell: bash
               run: |
-                  scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py 9fe3179174f0583de36acf4d561e544edd68a73a \
+                  scripts/run_in_build_env.sh "python3 scripts/tools/telink/update_zephyr.py cb7543bba6aaec8ff2ccd364eed0441863472b33 \
                   --sdk-repo https://github.com/telink-semi/tl_ble_sdk_zephyr.git --sdk-hash 8c43a9d44b146ce58e23ffcb29a483aa06b29383"
             - name: CI Examples Telink
               shell: bash
