@@ -58,6 +58,9 @@
 #include <zephyr/kernel.h>
 #include <zephyr/net/openthread.h>
 #endif
+#if defined(CONFIG_CHIP_DFU_OVER_BT_SMP)
+#include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
+#endif
 
 extern "C" {
 #if defined(CONFIG_BT_B9X)
@@ -216,15 +219,22 @@ CHIP_ERROR InitBLEMACAddress()
 // with BT_DATA, like the CHIPoBLE advertising path does.
 static bool RestartBleAdvertising(void)
 {
-    static const uint8_t advUuids[] = {
-        BT_UUID_16_ENCODE(BT_UUID_HTS_VAL),
-        BT_UUID_16_ENCODE(BT_UUID_DIS_VAL),
-        BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
+#if defined(CONFIG_CHIP_DFU_OVER_BT_SMP)
+    /* Advertise the mcumgr SMP service UUID so a DFU client can discover the
+     * device for BLE OTA after resume (the SMP service itself is registered by
+     * the mcumgr BT transport). */
+    static const uint8_t smpSvcUuid[] = { SMP_BT_SVC_UUID_VAL };
+    static const struct bt_data ad[]  = {
+        BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
+        BT_DATA(BT_DATA_UUID128_ALL, smpSvcUuid, sizeof(smpSvcUuid)),
     };
+#else
+    /* Minimal connectable advertisement (flags only); the name is carried in
+     * the scan response below. */
     static const struct bt_data ad[] = {
         BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
-        BT_DATA(BT_DATA_UUID16_ALL, advUuids, sizeof(advUuids)),
     };
+#endif
     static const struct bt_data sd[] = {
         BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
     };
