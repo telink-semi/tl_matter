@@ -465,9 +465,9 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     }
 
     /* Reload bonded keys (bt_disable() clears them via bt_keys_reset). */
-    if (IS_ENABLED(CONFIG_SETTINGS))
+    if (IS_ENABLED(CONFIG_BT_SETTINGS))
     {
-        settings_load();
+        settings_load_subtree("bt");
     }
 
     /* 3. Restart advertising (mirrors ot_ble_pm's bt_le_adv_restart()). */
