@@ -495,6 +495,15 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     ChipLogProgress(DeviceLayer, "BLE resumed: Thread + BLE coexist");
     return true;
 }
+
+void BLEManagerImpl::RearmBleTeardown(void)
+{
+    if (sBleTeardownDone)
+    {
+        return; // Already torn down.
+    }
+    TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
+}
 #endif
 
 void BLEManagerImpl::DriveBLEState()

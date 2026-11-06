@@ -195,6 +195,7 @@ public:
      * down yet or the resume failed. Must run in application task context
      * (blocking). Port of the ot_ble_pm sample ble_enable(). */
     bool ResumeBleAfterTeardown(void);
+    void RearmBleTeardown(void);
 #endif
 
 #ifdef CONFIG_CHIP_CUSTOM_BLE_ADV_DATA
