@@ -392,7 +392,9 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
 
     ChipLogProgress(DeviceLayer, "Commissioned: stopping BLE entirely, handing RF to 802.15.4");
 
-    /* Stop the BLE-scheduler insert task time slot. */
+    /* Stop the BLE-scheduler insert task time slot. Must happen before the RF
+     * park check so the RF can fall back to BLE mode; calling it again on a
+     * retry is harmless (it is idempotent). */
     tlx_bt_802154_dual_mode_disable();
 
     /* RF must park back in BLE mode before bt_disable() is safe
