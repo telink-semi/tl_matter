@@ -255,13 +255,13 @@ config CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
 	  for line-powered (CONFIG_PM=n) devices that only need to stop
 	  advertising after commissioning but keep BLE available on demand.
 	  Battery-powered SED/ICD devices should prefer
-	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING instead, as BLE_IDLE keeps
-	  the BLE/802.15.4 RF time-sharing running and therefore consumes more
-	  power.
+	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING instead, as
+	  CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING keeps the BLE/802.15.4
+	  RF time-sharing running and therefore consumes more power.
 
 config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	bool "Fully disable BLE after Thread commissioning in concurrent mode"
-	depends on CHIP_CONCURRENT_MODE && !CHIP_CONCURRENT_BLE_IDLE
+	depends on CHIP_ENABLE_CONCURRENT_CONNECTION && !CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
 	default n
 	help
 	  After Matter commissioning completes (and on reboot of an already
@@ -276,7 +276,7 @@ config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	  tlx_bt_802154_dual_mode_suspend()/resume() helpers, which are currently
 	  only built under CONFIG_PM. For line-powered (CONFIG_PM=n) devices that
 	  only need to stop advertising after commissioning but keep BLE
-	  resumable, use CHIP_CONCURRENT_BLE_IDLE instead.
+	  resumable, use CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING instead.
 
 	  Currently validated on TL721X only. Other Telink SoCs (e.g. TL321X,
 	  TL322X, TL323X, TL521X) are not yet tested.
@@ -293,8 +293,8 @@ config CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING
 	  commissioned device remains attached to the Thread network while
 	  BLE becomes available again e.g. as an OTA transport. Matter
 	  commissioning data is untouched. The application is responsible
-	  for stopping BLE again when done (the teardown sequence is
-	  available to be re-armed).
+	  for stopping BLE again when done (call RearmBleTeardown() to
+          re-arm the teardown sequence).
 
 	  Requires CONFIG_PM=y (inherited from
 	  CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING).

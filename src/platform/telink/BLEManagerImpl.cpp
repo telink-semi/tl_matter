@@ -49,14 +49,15 @@
 #include <zephyr/sys/util.h>
 #include <zephyr/version.h>
 
-#if defined(CONFIG_BT_CHANNEL_SOUNDING)
+#if defined(CONFIG_BT_CHANNEL_SOUNDING) || defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
 #include <zephyr/settings/settings.h>
 #endif
 
 #if defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
-#include <openthread/thread.h>
 #include <zephyr/kernel.h>
-#include <zephyr/net/openthread.h>
+#endif
+#if defined(CONFIG_CHIP_DFU_OVER_BT_SMP)
+#include <zephyr/mgmt/mcumgr/transport/smp_bt.h>
 #endif
 
 extern "C" {
@@ -216,15 +217,22 @@ CHIP_ERROR InitBLEMACAddress()
 // with BT_DATA, like the CHIPoBLE advertising path does.
 static bool RestartBleAdvertising(void)
 {
-    static const uint8_t advUuids[] = {
-        BT_UUID_16_ENCODE(BT_UUID_HTS_VAL),
-        BT_UUID_16_ENCODE(BT_UUID_DIS_VAL),
-        BT_UUID_16_ENCODE(BT_UUID_BAS_VAL),
+#if defined(CONFIG_CHIP_DFU_OVER_BT_SMP)
+    /* Advertise the mcumgr SMP service UUID so a DFU client can discover the
+     * device for BLE OTA after resume (the SMP service itself is registered by
+     * the mcumgr BT transport). */
+    static const uint8_t smpSvcUuid[] = { SMP_BT_SVC_UUID_VAL };
+    static const struct bt_data ad[]  = {
+        BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
+        BT_DATA(BT_DATA_UUID128_ALL, smpSvcUuid, sizeof(smpSvcUuid)),
     };
+#else
+    /* Minimal connectable advertisement (flags only); the name is carried in
+     * the scan response below. */
     static const struct bt_data ad[] = {
         BT_DATA(BT_DATA_FLAGS, &kAdvertisingFlags, sizeof(kAdvertisingFlags)),
-        BT_DATA(BT_DATA_UUID16_ALL, advUuids, sizeof(advUuids)),
     };
+#endif
     static const struct bt_data sd[] = {
         BT_DATA(BT_DATA_NAME_COMPLETE, CONFIG_BT_DEVICE_NAME, sizeof(CONFIG_BT_DEVICE_NAME) - 1),
     };
@@ -334,7 +342,7 @@ void BLEManagerImpl::DriveBLEState(intptr_t arg)
     BLEMgrImpl().DriveBLEState();
 }
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE) &&                                           \
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
     !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 {
@@ -346,20 +354,11 @@ void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 }
 #endif
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
 void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
 {
-    /* Thread must be attached before the RF handover; retry until it is. */
-    otDeviceRole role = otThreadGetDeviceRole(openthread_get_default_instance());
-    if (role == OT_DEVICE_ROLE_DISABLED || role == OT_DEVICE_ROLE_DETACHED)
-    {
-        ChipLogDetail(DeviceLayer, "BLE teardown: Thread not attached yet, retry in 5s");
-        TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(5));
-        return;
-    }
-
-    /* Defer the teardown state machine to the CHIP task so the BLE state
-     * (mGAPConns / mFlags / advertising) is accessed under the CHIP stack lock. */
+    /* Trampoline only: all state checks (including Thread attachment) run on
+     * the CHIP task under the CHIP stack lock. */
     TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(DoBleTeardown, 0);
 }
 
@@ -370,9 +369,17 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
         return;
     }
 
+    /* Thread must be attached before the RF handover; retry until it is. */
+    if (!ConnectivityMgr().IsThreadAttached())
+    {
+        ChipLogDetail(DeviceLayer, "BLE teardown: Thread not attached yet, retry in 5s");
+        TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(5));
+        return;
+    }
+
     /* A BLE connection is still active (e.g. Channel Sounding client):
      * do not tear the stack down from under it. */
-    if (sInstance.mGAPConns > 0)
+    if (sInstance.mTotalConnNum > 0)
     {
         ChipLogDetail(DeviceLayer, "BLE teardown: BLE connection active, retry in 5s");
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(5));
@@ -392,7 +399,9 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
 
     ChipLogProgress(DeviceLayer, "Commissioned: stopping BLE entirely, handing RF to 802.15.4");
 
-    /* Stop the BLE-scheduler insert task time slot. */
+    /* Stop the BLE-scheduler insert task time slot. Must happen before the RF
+     * park check so the RF can fall back to BLE mode; calling it again on a
+     * retry is harmless (it is idempotent). */
     tlx_bt_802154_dual_mode_disable();
 
     /* RF must park back in BLE mode before bt_disable() is safe
@@ -411,6 +420,16 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
     {
         ChipLogError(DeviceLayer, "bt_disable failed (%d), continue with 802.15.4 revival", err);
     }
+
+    /* bt_disable() tears down the BLE host: the CHIPoBLE/RAS GATT services and
+     * any in-flight advertising are gone. Clear the corresponding flags so the
+     * state machine re-registers / re-advertises after a later resume (otherwise
+     * StartAdvertisingProcess() would skip GATT re-registration). */
+    sInstance.mFlags.Clear(Flags::kChipoBleGattServiceRegister);
+    sInstance.mFlags.Clear(Flags::kAdvertising);
+#if defined(CONFIG_BT_CHANNEL_SOUNDING)
+    sInstance.mFlags.Clear(Flags::kRasGattServiceRegistered);
+#endif
 
     /* RF is now reset by the controller deinit: restore it for 802.15.4 and
      * latch permanent ownership. In the BLE-off policy this is one-way; in the
@@ -453,9 +472,9 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     }
 
     /* Reload bonded keys (bt_disable() clears them via bt_keys_reset). */
-    if (IS_ENABLED(CONFIG_SETTINGS))
+    if (IS_ENABLED(CONFIG_BT_SETTINGS))
     {
-        settings_load();
+        settings_load_subtree("bt");
     }
 
     /* 3. Restart advertising (mirrors ot_ble_pm's bt_le_adv_restart()). */
@@ -472,6 +491,15 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     sBleTeardownDone     = false;
     ChipLogProgress(DeviceLayer, "BLE resumed: Thread + BLE coexist");
     return true;
+}
+
+void BLEManagerImpl::RearmBleTeardown(void)
+{
+    if (sBleTeardownDone)
+    {
+        return; // Already torn down.
+    }
+    TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
 }
 #endif
 
@@ -1103,7 +1131,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         err = HandleTXCharComplete(event);
         break;
 
-#if defined(CONFIG_CHIP_CONCURRENT_MODE) && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
     case DeviceEventType::kCommissioningComplete:
         // One-way BLE teardown after commissioning. CommissioningWindowManager::Cleanup()
         // (application layer, runs after the device layer on this same event) stops
@@ -1111,7 +1139,7 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         // Thread/CASE traffic settle before the RF handover.
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
         break;
-#elif defined(CONFIG_CHIP_CONCURRENT_MODE) && !defined(CONFIG_CHIP_CONCURRENT_BLE_IDLE)
+#elif CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
     case DeviceEventType::kCommissioningComplete:
         // Concurrent mode: re-enable BLE advertising after commissioning completes.
         // ScheduleWork defers this until after CommissioningWindowManager::Cleanup()
