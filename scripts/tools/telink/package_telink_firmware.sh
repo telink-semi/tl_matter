@@ -254,13 +254,16 @@ should_package() {
     return 1
 }
 
-# Function to find the latest build directory for a given prefix
+# Function to find the latest build directory for a given prefix.
+# Matches only the exact target name or the target name followed by the
+# timestamp suffix (YYYYMMDD_HHMMSS), so timestamped OTA variants
+# (e.g. <target>_ota_v1_<ts>) are never mistaken for the non-OTA target.
 find_latest_build_dir() {
     local app_dir="$1"
     local prefix="$2"
     local latest_dir=""
 
-    for dir in "$app_dir/$prefix"*; do
+    for dir in "$app_dir/$prefix" "$app_dir/$prefix"_????????_??????; do
         if [ -d "$dir" ] && [ -f "$dir/zephyr/.config" ]; then
             if [ -z "$latest_dir" ] || [ "$dir" -nt "$latest_dir" ]; then
                 latest_dir="$dir"

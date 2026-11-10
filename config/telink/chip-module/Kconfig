@@ -263,7 +263,7 @@ config CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
 
 config CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING
 	bool "Fully disable BLE after Thread commissioning in concurrent mode"
-	depends on CHIP_ENABLE_CONCURRENT_CONNECTION && !CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+	depends on CHIP_ENABLE_CONCURRENT_CONNECTION && !CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING && PM
 	default n
 	help
 	  After Matter commissioning completes (and on reboot of an already
