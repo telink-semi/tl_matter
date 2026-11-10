@@ -134,8 +134,10 @@ private:
     CHIP_ERROR UnregisterGattService();
 
     static void DriveBLEState(intptr_t arg);
-#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
-    !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+    /* Re-enables BLE advertising after commissioning completes (line-powered /
+     * Channel Sounding). Runs after CommissioningWindowManager::Cleanup() has
+     * disabled advertising, so the re-enable is not immediately overridden. */
     static void HandleConcurrentModeReAdv(intptr_t arg);
 #endif
 #if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)

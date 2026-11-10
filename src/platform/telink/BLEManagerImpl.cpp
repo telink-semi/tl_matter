@@ -342,8 +342,7 @@ void BLEManagerImpl::DriveBLEState(intptr_t arg)
     BLEMgrImpl().DriveBLEState();
 }
 
-#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING &&          \
-    !defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+#if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
 void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 {
     // Runs after CommissioningWindowManager::Cleanup() has disabled BLE advertising.
@@ -1139,14 +1138,14 @@ void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
         // Thread/CASE traffic settle before the RF handover.
         TEMPORARY_RETURN_IGNORED k_work_reschedule(&sBleTeardownWork, K_SECONDS(10));
         break;
-#elif CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && !CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+#elif CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
     case DeviceEventType::kCommissioningComplete:
         // Concurrent mode: re-enable BLE advertising after commissioning completes.
         // ScheduleWork defers this until after CommissioningWindowManager::Cleanup()
         // (which runs later in the application layer) has called SetBLEAdvertisingEnabled(false),
         // so the re-enable is not immediately overridden.
         VerifyOrReturn(PlatformMgr().ScheduleWork(HandleConcurrentModeReAdv, 0) == CHIP_NO_ERROR,
-                             ChipLogError(DeviceLayer, "Failed to schedule BLE re-advertising"));
+                       ChipLogError(DeviceLayer, "Failed to schedule BLE re-advertising"));
         break;
 #endif
 
