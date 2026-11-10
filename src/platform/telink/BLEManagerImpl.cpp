@@ -514,6 +514,13 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     /* 3. Restart advertising (mirrors ot_ble_pm's bt_le_adv_restart()). */
     if (!RestartBleAdvertising())
     {
+        /* bt_enable() already re-initialized the BLE host and the RF is parked
+         * in BLE mode; undo both so the device returns to the torn-down state
+         * (RF owned by 802.15.4) instead of being stuck with BLE up but not
+         * advertising. */
+        ChipLogError(DeviceLayer, "Failed to restart BLE advertising, rolling back to 802.15.4");
+        bt_disable();
+        tlx_bt_802154_dual_mode_suspend();
         return false;
     }
 
