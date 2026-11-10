@@ -203,18 +203,23 @@ CHIP_ERROR InitBLEMACAddress()
     return CHIP_NO_ERROR;
 } // namespace
 
-// Restart a connectable advertisement after BLE has been re-enabled following
-// the post-commissioning teardown. Mirrors the ot_ble_pm sample's
-// bt_le_adv_restart()/bt_ready(): the name is carried in the scan response and
-// the identity is created automatically by bt_enable()'s bt_id_init() (public
-// MAC via READ_BD_ADDR with TL_BLE_CTRL_MAC_TYPE_PUBLIC).
-//
-// Do not build these entries with BT_DATA_BYTES(): that macro points at a
-// compound literal (uint8_t[]){...}, and in C++ the compiler either rejects the
-// "address of temporary array" or silently emits an all-zero array. The latter
-// leaves the on-air payload without a Flags AD, and strict peers such as iOS
-// then treat the advertisement as non-connectable. Use explicit static arrays
-// with BT_DATA, like the CHIPoBLE advertising path does.
+/**
+ * Restart a connectable advertisement after BLE is re-enabled following the
+ * post-commissioning teardown.
+ *
+ * Mirrors the ot_ble_pm sample's bt_le_adv_restart()/bt_ready(): the name is
+ * carried in the scan response and the identity is created automatically by
+ * bt_enable()'s bt_id_init() (public MAC via READ_BD_ADDR with
+ * TL_BLE_CTRL_MAC_TYPE_PUBLIC).
+ *
+ * When DFU-over-BT-SMP is enabled, advertises the mcumgr SMP service UUID so a
+ * DFU client can discover the device for BLE OTA; otherwise falls back to a
+ * flags-only advertisement. Do not build these entries with BT_DATA_BYTES():
+ * that macro points at a compound literal whose address is invalid in C++ and
+ * leaves the on-air payload without a Flags AD.
+ *
+ * @return true on success, false if bt_le_adv_start() fails.
+ */
 static bool RestartBleAdvertising(void)
 {
 #if defined(CONFIG_CHIP_DFU_OVER_BT_SMP)
@@ -344,10 +349,15 @@ void BLEManagerImpl::DriveBLEState(intptr_t arg)
 }
 
 #if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+/**
+ * Re-enables BLE advertising after commissioning completes (line-powered or
+ * Channel Sounding).
+ *
+ * Runs after CommissioningWindowManager::Cleanup() has disabled advertising,
+ * so the re-enable is not immediately overridden.
+ */
 void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 {
-    // Runs after CommissioningWindowManager::Cleanup() has disabled BLE advertising.
-    // Re-enable it so that BLE (e.g. Channel Sounding) remains available alongside Thread.
     ChipLogProgress(AppServer, "Fabric already commissioned. Enabling BLE advertisement for concurrent mode");
     VerifyOrReturn(BLEMgrImpl()._SetAdvertisingEnabled(true) == CHIP_NO_ERROR,
                    ChipLogError(DeviceLayer, "Failed to re-enable BLE advertising"));
@@ -355,13 +365,26 @@ void BLEManagerImpl::HandleConcurrentModeReAdv(intptr_t arg)
 #endif
 
 #if CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_CONCURRENT_BLE_OFF_AFTER_COMMISSIONING)
+/**
+ * k_work handler (Zephyr sysworkq): trampoline only.
+ *
+ * All state checks (including Thread attachment) run on the CHIP task under
+ * the CHIP stack lock via DoBleTeardown().
+ */
 void BLEManagerImpl::HandleBleTeardownWork(struct k_work * work)
 {
-    /* Trampoline only: all state checks (including Thread attachment) run on
-     * the CHIP task under the CHIP stack lock. */
     TEMPORARY_RETURN_IGNORED PlatformMgr().ScheduleWork(DoBleTeardown, 0);
 }
 
+/**
+ * Runs the post-commissioning BLE teardown state machine on the CHIP task with
+ * the CHIP stack lock held.
+ *
+ * Retries (via the delayed sBleTeardownWork) until Thread is attached, no BLE
+ * connection is active, and advertising is no longer needed. Then stops the
+ * BLE/802.15.4 insert task, disables BLE, clears the registration flags, and
+ * hands the RF back to 802.15.4.
+ */
 void BLEManagerImpl::DoBleTeardown(intptr_t arg)
 {
     if (sBleTeardownDone || !sInstance.mBLERadioInitialized)
@@ -443,6 +466,17 @@ void BLEManagerImpl::DoBleTeardown(intptr_t arg)
 #endif
 
 #if defined(CONFIG_CHIP_CONCURRENT_BLE_RESUME_AFTER_COMMISSIONING)
+/**
+ * Re-enables BLE after the post-commissioning teardown.
+ *
+ * Restores the BLE/802.15.4 RF time-sharing, re-initializes the BLE stack,
+ * reloads bonded keys, and starts a connectable advertisement. Must run in
+ * application task context (blocking). Port of the ot_ble_pm sample
+ * ble_enable().
+ *
+ * @return true on success, false if BLE has not been torn down yet or the
+ *         resume failed.
+ */
 bool BLEManagerImpl::ResumeBleAfterTeardown(void)
 {
     /* Nothing to resume: teardown has not run yet (BLE still up). */
@@ -493,6 +527,12 @@ bool BLEManagerImpl::ResumeBleAfterTeardown(void)
     return true;
 }
 
+/**
+ * Re-arms the post-commissioning BLE teardown sequence.
+ *
+ * No-ops when BLE has already been torn down; otherwise reschedules the
+ * delayed teardown work so BLE can be stopped again after a resume.
+ */
 void BLEManagerImpl::RearmBleTeardown(void)
 {
     if (sBleTeardownDone)

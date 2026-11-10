@@ -300,6 +300,13 @@ void dual_mode_auto_switch(int32_t op)
 #endif /* CONFIG_DUAL_MODE */
 
 #if CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
+/**
+ * Re-enables BLE advertising after commissioning (or on boot of an
+ * already-commissioned device).
+ *
+ * Scheduled via PlatformMgr().ScheduleWork() when
+ * CHIP_DEVICE_CONFIG_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING is enabled.
+ */
 void EnablePostCommissioningBle(intptr_t)
 {
     CHIP_ERROR err = ConnectivityMgr().SetBLEAdvertisingEnabled(true);
