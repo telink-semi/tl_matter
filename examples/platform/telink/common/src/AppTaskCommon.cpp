@@ -596,6 +596,15 @@ void AppTaskCommon::PrintFirmwareInfo(void)
 #endif
 }
 
+/**
+ * Initializes the common application parts.
+ *
+ * Initializes the Matter server and data model, then applies the BLE advertising
+ * policy for an already-commissioned device in concurrent mode: auto re-advertise,
+ * leave BLE idle, or defer to the post-commissioning BLE teardown.
+ *
+ * @return CHIP_NO_ERROR on success.
+ */
 CHIP_ERROR AppTaskCommon::InitCommonParts(void)
 {
     PrintFirmwareInfo();

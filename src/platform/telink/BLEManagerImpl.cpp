@@ -170,6 +170,15 @@ bt_gatt_service sChipoBleService = BT_GATT_SERVICE(sChipoBleAttributes);
 // This value should be adjusted accordingly if the service declaration changes.
 constexpr int kCHIPoBLE_CCC_AttributeIndex = 3;
 
+/**
+ * Initializes the BLE identity address.
+ *
+ * Applies the BLE public address by default; if a random static address is
+ * reported (or no public address exists), creates a new random static identity
+ * and stores it in flash.
+ *
+ * @return CHIP_NO_ERROR on success, or the mapped Zephyr error otherwise.
+ */
 CHIP_ERROR InitBLEMACAddress()
 {
     // By default the BLE public address will be applied. In case if previously generated random address doesn't exist
@@ -255,6 +264,15 @@ static bool RestartBleAdvertising(void)
 
 BLEManagerImpl BLEManagerImpl::sInstance;
 
+/**
+ * Initializes the BLE manager.
+ *
+ * Initializes the BLE identity address and the BleLayer, and (in concurrent
+ * mode) enables the BLE stack immediately and starts a minimal advertisement so
+ * the BLE/802.15.4 insert task can be scheduled before Thread auto-starts.
+ *
+ * @return CHIP_NO_ERROR on success.
+ */
 CHIP_ERROR BLEManagerImpl::_Init()
 {
     int err = 0;
@@ -550,6 +568,13 @@ void BLEManagerImpl::RearmBleTeardown(void)
 }
 #endif
 
+/**
+ * Drives the BLE state machine.
+ *
+ * Performs one-time async initialization on first call, then starts/stops
+ * advertising and registers/unregisters the GATT service based on the current
+ * flags, service mode, and connection state.
+ */
 void BLEManagerImpl::DriveBLEState()
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
@@ -1152,6 +1177,14 @@ void BLEManagerImpl::HandleExtendedBLEAdvertisementInterval(System::Layer * laye
     ChipLogProgress(DeviceLayer, "CHIPoBLE advertising mode changed to extended");
 }
 
+/**
+ * Handles platform events for the BLE manager.
+ *
+ * Dispatches BLE-related events (commissioning complete, GATT writes/indications,
+ * disconnects, etc.) to the corresponding handlers. On commissioning complete,
+ * schedules the post-commissioning BLE teardown or re-advertisement according to
+ * the concurrent BLE policy.
+ */
 void BLEManagerImpl::_OnPlatformEvent(const ChipDeviceEvent * event)
 {
     CHIP_ERROR err = CHIP_NO_ERROR;
