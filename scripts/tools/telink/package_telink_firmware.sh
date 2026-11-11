@@ -81,6 +81,7 @@ set -e
 #       - build_tl7218x_default
 #       - build_tl7218x_2m_flash_lzma_v1
 #       - build_tl7218x_2m_flash_lzma_v2
+#       - build_tl7218x_concurrent
 #
 #     Light Switch App:
 #       - build_tl7218x_retention_default
@@ -258,13 +259,16 @@ should_package() {
     return 1
 }
 
-# Function to find the latest build directory for a given prefix
+# Function to find the latest build directory for a given prefix.
+# Matches only the exact target name or the target name followed by the
+# timestamp suffix (YYYYMMDD_HHMMSS), so timestamped OTA variants
+# (e.g. <target>_ota_v1_<ts>) are never mistaken for the non-OTA target.
 find_latest_build_dir() {
     local app_dir="$1"
     local prefix="$2"
     local latest_dir=""
 
-    for dir in "$app_dir/$prefix"*; do
+    for dir in "$app_dir/$prefix" "$app_dir/$prefix"_????????_??????; do
         if [ -d "$dir" ] && [ -f "$dir/zephyr/.config" ]; then
             if [ -z "$latest_dir" ] || [ "$dir" -nt "$latest_dir" ]; then
                 latest_dir="$dir"
@@ -434,6 +438,16 @@ generate_lighting_app() {
             west build -p -b tl7218x -d "$BUILD_DIR" -- \
                 -DCONFIG_CHIP_DEVICE_SOFTWARE_VERSION=2 \
                 -DCONF_FILE="prj.conf;boards/tl7218x_2m_flash_ota_lzma.conf" \
+                2>&1 | tee "$BUILD_DIR.log"
+        fi
+
+        if should_generate build_tl7218x_concurrent; then
+            BUILD_DIR="build_tl7218x_concurrent_$DATE"
+            echo ""
+            echo "=== TL7218X: 2MB Flash (Concurrent mode, line-powered, BLE adv after commissioning) ==="
+            echo "Generate directory: $BUILD_DIR"
+            west build -p -b tl7218x -d "$BUILD_DIR" -- \
+                -DCONF_FILE="prj.conf;boards/tl7218x_concurrent.conf" \
                 2>&1 | tee "$BUILD_DIR.log"
         fi
     fi
@@ -928,10 +942,14 @@ extract_firmware() {
     BUILD_72_DEFAULT=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl7218x_default")
     BUILD_72_2M_FLASH_LZMA_V1=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl7218x_2m_flash_lzma_v1")
     BUILD_72_2M_FLASH_LZMA_V2=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl7218x_2m_flash_lzma_v2")
+    BUILD_72_CONCURRENT=$(get_build_dir "$LIGHTING_APP_DIR" "build_tl7218x_concurrent")
 
     BUILD_72_RET_DEFAULT=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_default")
     BUILD_72_RET_LZMA_V1=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_lzma_v1")
     BUILD_72_RET_LZMA_V2=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_lzma_v2")
+    BUILD_72_RET_CONCURRENT_OFF=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_concurrent_off")
+    BUILD_72_RET_CONCURRENT_OFF_OTA_V1=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_concurrent_off_ota_v1")
+    BUILD_72_RET_CONCURRENT_OFF_OTA_V2=$(get_build_dir "$LIGHT_SWITCH_APP_DIR" "build_tl7218x_retention_concurrent_off_ota_v2")
 
     BUILD_72_CS_V1=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_v1")
     BUILD_72_CS_V2=$(get_build_dir "$CONTACT_SENSOR_APP_DIR" "build_tl7218x_retention_contact_v2")
@@ -950,8 +968,9 @@ extract_firmware() {
         "$BUILD_52_RET_LZMA_V1" "$BUILD_52_RET_LZMA_V2" "$BUILD_52_RET_DUAL" \
         "$BUILD_52_CS_V1" "$BUILD_52_CS_V2" "$BUILD_52_CS_LZMA_V1" "$BUILD_52_CS_LZMA_V2" \
         "$BUILD_72_DEFAULT" "$BUILD_72_2M_FLASH_LZMA_V1" \
-        "$BUILD_72_2M_FLASH_LZMA_V2" "$BUILD_72_RET_DEFAULT" "$BUILD_72_RET_LZMA_V1" \
-        "$BUILD_72_RET_LZMA_V2" "$BUILD_72_CS_V1" \
+        "$BUILD_72_2M_FLASH_LZMA_V2" "$BUILD_72_CONCURRENT" "$BUILD_72_RET_DEFAULT" "$BUILD_72_RET_LZMA_V1" \
+        "$BUILD_72_RET_LZMA_V2" "$BUILD_72_RET_CONCURRENT_OFF" \
+        "$BUILD_72_RET_CONCURRENT_OFF_OTA_V1" "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2" "$BUILD_72_CS_V1" \
         "$BUILD_72_CS_V2" "$BUILD_72_CS_LZMA_V1" "$BUILD_72_CS_LZMA_V2"; do
         if [ -d "$dir" ] && [ -f "$dir/zephyr/.config" ]; then
             version=$(grep CONFIG_CHIP_DEVICE_SOFTWARE_VERSION "$dir/zephyr/.config" 2>/dev/null | cut -d'=' -f2 || echo "unknown")
@@ -1023,6 +1042,10 @@ extract_firmware() {
         cp "$BUILD_72_2M_FLASH_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_lzma_v2_dfu.lzma.bin"
         echo "Copied from $BUILD_72_2M_FLASH_LZMA_V2: $PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_lzma_v2_dfu.lzma.bin"
     fi
+    if [ -n "$BUILD_72_CONCURRENT" ] && [ -f "$BUILD_72_CONCURRENT/zephyr/merged.bin" ]; then
+        cp "$BUILD_72_CONCURRENT/zephyr/merged.bin" "$PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_concurrent.bin"
+        echo "Copied from $BUILD_72_CONCURRENT: $PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_concurrent.bin"
+    fi
 
     echo ""
     echo "=== Copying Light Switch App files (TL3238X) ==="
@@ -1087,6 +1110,22 @@ extract_firmware() {
     if [ -n "$BUILD_72_RET_LZMA_V2" ] && [ -f "$BUILD_72_RET_LZMA_V2/zephyr/merged_dfu.lzma.bin" ]; then
         cp "$BUILD_72_RET_LZMA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_lzma_v2_dfu.lzma.bin"
         echo "Copied from $BUILD_72_RET_LZMA_V2: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_lzma_v2_dfu.lzma.bin"
+    fi
+    if [ -n "$BUILD_72_RET_CONCURRENT_OFF" ] && [ -f "$BUILD_72_RET_CONCURRENT_OFF/zephyr/merged.bin" ]; then
+        cp "$BUILD_72_RET_CONCURRENT_OFF/zephyr/merged.bin" "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off.bin"
+        echo "Copied from $BUILD_72_RET_CONCURRENT_OFF: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off.bin"
+    fi
+    if [ -n "$BUILD_72_RET_CONCURRENT_OFF_OTA_V1" ] && [ -f "$BUILD_72_RET_CONCURRENT_OFF_OTA_V1/zephyr/merged.bin" ]; then
+        cp "$BUILD_72_RET_CONCURRENT_OFF_OTA_V1/zephyr/merged.bin" "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v1.bin"
+        echo "Copied from $BUILD_72_RET_CONCURRENT_OFF_OTA_V1: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v1.bin"
+    fi
+    if [ -n "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2" ] && [ -f "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2/zephyr/matter.ota" ]; then
+        cp "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2/zephyr/matter.ota" "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2.ota"
+        echo "Copied from $BUILD_72_RET_CONCURRENT_OFF_OTA_V2: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2.ota"
+    fi
+    if [ -n "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2" ] && [ -f "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2/zephyr/merged_dfu.lzma.bin" ]; then
+        cp "$BUILD_72_RET_CONCURRENT_OFF_OTA_V2/zephyr/merged_dfu.lzma.bin" "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2_dfu.lzma.bin"
+        echo "Copied from $BUILD_72_RET_CONCURRENT_OFF_OTA_V2: $PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2_dfu.lzma.bin"
     fi
 
     if [ "$GENERATE_CONTACT" = true ]; then
@@ -1337,6 +1376,18 @@ EOF
     if [ -f "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_lzma_v2_dfu.lzma.bin" ]; then
         add_firmware_entry "light-switch/tl7218x/light-switch-app_2m_flash_lzma_v2_dfu.lzma.bin" "BLE DFU image v2 (LZMA, 2MB Flash)"
     fi
+    if [ -f "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off.bin" ]; then
+        add_firmware_entry "light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off.bin" "Concurrent mode, BLE off after commissioning (2MB Flash, no OTA)"
+    fi
+    if [ -f "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v1.bin" ]; then
+        add_firmware_entry "light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v1.bin" "Concurrent BLE-off, software version 1 (LZMA, 2MB Flash)"
+    fi
+    if [ -f "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2.ota" ]; then
+        add_firmware_entry "light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2.ota" "Concurrent BLE-off, Matter OTA image v2 (LZMA, 2MB Flash)"
+    fi
+    if [ -f "$PKG_DIR/feature-test/light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2_dfu.lzma.bin" ]; then
+        add_firmware_entry "light-switch/tl7218x/light-switch-app_2m_flash_concurrent_ble_off_ota_v2_dfu.lzma.bin" "Concurrent BLE-off, BLE DFU image v2 (LZMA, 2MB Flash)"
+    fi
 
     # TL3238X Lighting
     cat >>"$PKG_DIR/README.md" <<EOF
@@ -1408,6 +1459,9 @@ EOF
     fi
     if [ -f "$PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_lzma_v2_dfu.lzma.bin" ]; then
         add_firmware_entry "lighting/tl7218x/lighting-app_2m_flash_lzma_v2_dfu.lzma.bin" "BLE DFU image v2 (LZMA, 2MB Flash)"
+    fi
+    if [ -f "$PKG_DIR/feature-test/lighting/tl7218x/lighting-app_2m_flash_concurrent.bin" ]; then
+        add_firmware_entry "lighting/tl7218x/lighting-app_2m_flash_concurrent.bin" "Concurrent mode, line-powered (2MB Flash, BLE adv after commissioning)"
     fi
 
     cat >>"$PKG_DIR/README.md" <<EOF
