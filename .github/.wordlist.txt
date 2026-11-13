@@ -41,6 +41,7 @@ AFL
 AIDL
 algs
 aliased
+Aliro
 alloc
 allocator
 allocators
@@ -184,6 +185,7 @@ BTN
 BTP
 btvirt
 BuildKit
+buildable
 buildwithmatter
 buildX
 burndown
@@ -437,6 +439,7 @@ DeviceNetworkProvisioningDelegate
 DeviceNetworkProvisioningDelegateImpl
 DevicePairingDelegate
 DeviceTemperatureConfiguration
+devicetree
 Devkit
 DevKitC
 DevKitM
@@ -1789,3 +1792,12 @@ zigbeealliance
 zigbeethread
 zsdk
 ZXing
+bdk
+Changelog
+changelog
+devicetree
+DLM
+downloaders
+ILM
+tlk
+udev

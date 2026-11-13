@@ -15,13 +15,6 @@ out/
 /src/test_driver/nrfconnect/build/
 /src/darwin/Framework/build/
 /src/python_testing/matter_testing_infrastructure/build/
-/integrations/docker/images/stage-2/chip-build-efr32/files-slt/autogen
-/integrations/docker/images/stage-2/chip-build-efr32/files-slt/*.lock
-/integrations/docker/images/stage-2/chip-build-efr32/files-slt/user.slconf
-/scripts/setup/silabs/slt
-/scripts/setup/silabs/.install-packages-done
-/third_party/silabs/simplicity_sdk
-/third_party/silabs/wifi_sdk
 
 # Pigweed Environment
 .environment*/
@@ -103,3 +96,9 @@ imgui.ini
 
 # Joint Fabric test harness output file
 admin_storage.json
+
+# ignore build output directories
+build-*
+build_*
+factory_data*
+*.patch
