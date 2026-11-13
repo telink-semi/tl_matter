@@ -45,7 +45,7 @@ tightly coupled and must be used as a matched pair:
 | Component                                                | Role                                                                                                                        | Required |
 | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | :------: |
 | **Telink Zephyr SDK** (`dev-tlk_v4.1` branch)            | Provides the Zephyr RTOS core, Telink HAL, BLE stack, MCUBoot, OpenThread, the WEST tool and build toolchain                |    ✅    |
-| **Telink Matter SDK** (`dev-tlk_v1.5` branch, this repo) | Provides the Matter protocol stack and Telink example applications; consumes the Telink Zephyr SDK via `TELINK_ZEPHYR_BASE` |    ✅    |
+| **Telink Matter SDK** (`dev-tlk_v1.6.1` branch, this repo) | Provides the Matter protocol stack and Telink example applications; consumes the Telink Zephyr SDK via `TELINK_ZEPHYR_BASE` |    ✅    |
 
 Both are required — the Matter SDK cannot be built without the Zephyr SDK, and
 the Zephyr SDK alone does not provide Matter support.
@@ -81,7 +81,7 @@ sudo apt-get install git gcc g++ pkg-config libssl-dev libdbus-1-dev \
 mkdir -p ~/zephyrproject && cd ~/zephyrproject
 git clone https://github.com/telink-semi/tl_matter.git connectedhomeip
 cd connectedhomeip
-git checkout <telink_matter_branch>     # e.g. dev-tlk_v1.5
+git checkout <telink_matter_branch>     # e.g. dev-tlk_v1.6.1
 ./scripts/checkout_submodules.py --platform telink linux
 ```
 
@@ -253,12 +253,44 @@ git branch --show-current     # should be dev-tlk_v4.1
 git checkout dev-tlk_v4.1     # switch if needed
 west update
 
-# Telink Matter SDK — dev-tlk_v1.5
+# Telink Matter SDK — dev-tlk_v1.6.1
 cd ~/zephyrproject/connectedhomeip
-git branch --show-current     # should be dev-tlk_v1.5
-git checkout dev-tlk_v1.5     # switch if needed
+git branch --show-current     # should be dev-tlk_v1.6.1
+git checkout dev-tlk_v1.6.1     # switch if needed
 ./scripts/checkout_submodules.py --platform telink linux
 ```
 
 See the [Release Notes](./releases/telink_release_notes.md) for the matched
 branch of each release.
+
+## Multi-device Commissioning
+
+Each Telink Matter demo app ships with the same default Setup discriminator
+(`0xF00`) and Setup passcode (`20202021`). This is fine for single-device
+testing, but **commissioning two devices with the same identity simultaneously
+will fail** — some ecosystems like Google Home might report "QR code already scanned"
+or silently replace the first device with the second.
+
+### How to fix
+
+Before building each device, assign a unique discriminator and Serial Number:
+
+| Demo           | Discriminator | Serial Number     |
+| -------------- | :-----------: | ----------------- |
+| lighting-app   | `0xF00`       | `TLK-LIGHT-0001`  |
+| light-switch   | `0xF01`       | `TLK-SWITCH-0001` |
+| other demos    | increment     | unique per device |
+
+Set these in the demo's `prj.conf`:
+
+```conf
+CONFIG_CHIP_DEVICE_DISCRIMINATOR=0xF00
+CONFIG_CHIP_DEVICE_SERIAL_NUMBER="TLK-LIGHT-0001"
+```
+
+After changing the discriminator, **rebuild and re-read the Setup QR code** from
+the UART log — the old QR code is no longer valid.
+
+> ⚠️ The default values (0xF00–0xFFF) are in the test-reserved range and are
+> for debugging only. **Production devices must use factory data** to provision
+> unique discriminator, passcode, Serial Number, and certification credentials.
