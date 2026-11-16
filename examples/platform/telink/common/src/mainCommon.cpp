@@ -201,6 +201,7 @@ int main(void)
 #if !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION && defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
     if (!chip::DeviceLayer::ConnectivityMgr().IsThreadProvisioned())
     {
+        LOG_INF("Thread prescan at startup (blocking)");
         static InitScanCallback sInitScanCallback;
         LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInitScanCallback));
         k_sem_take(&gThreadPrescanDoneSem, K_SECONDS(15));

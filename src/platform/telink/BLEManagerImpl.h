@@ -207,7 +207,7 @@ public:
 };
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION &&                                      \
-    defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE)
+    !defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
 class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
 {
 public:
