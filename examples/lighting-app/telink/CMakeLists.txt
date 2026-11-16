@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2022-2025 Project CHIP Authors
+#    Copyright (c) 2022-2026 Project CHIP Authors
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -92,11 +92,15 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
   target_sources(app PRIVATE ${TELINK_COMMON}/util/src/OTAUtil.cpp)
 endif()
 
-if(CONFIG_MCUMGR_TRANSPORT_BT)
-    zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
-    target_sources(app PRIVATE ${TELINK_COMMON}/util/src/DFUOverSMP.cpp)
+if(CONFIG_BT_CHANNEL_SOUNDING)
+  target_sources(app PRIVATE ${CHIP_ROOT}/src/platform/telink/CsReflector.cpp)
 endif()
 
 if (CONFIG_CHIP_PW_RPC)
   include(${TELINK_COMMON}/Rpc.cmake)
 endif(CONFIG_CHIP_PW_RPC)
+
+if(CONFIG_OPENTHREAD_SNTP_CLIENT)
+  target_sources(app PRIVATE
+                   ${TELINK_COMMON}/util/src/ThreadTimeSync.cpp)
+endif()

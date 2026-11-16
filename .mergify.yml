@@ -80,6 +80,7 @@ pull_request_rules:
               labels:
                   - backport-v1.5-branch
 
+
     - name: Backport to v1.4.2-branch
       conditions:
           - merged
@@ -92,6 +93,104 @@ pull_request_rules:
               labels:
                   - backport-v1.4.2-branch
 
+    # Telink fork backport rules - cherry-pick the squashed dev/master commit.
+    # Apply a request-backport-<branch> label on a dev-tlk_v* / master PR.
+    - name: Backport to release-v1.0-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-release-v1.0-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - release-v1.0-v1.5-branch
+              labels:
+                  - backport-release-v1.0-v1.5-branch
+
+    - name: Backport to pre_release-v1.1-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-pre_release-v1.1-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - pre_release-v1.1-v1.5-branch
+              labels:
+                  - backport-pre_release-v1.1-v1.5-branch
+
+    - name: Backport to pre_release-v1.2-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-pre_release-v1.2-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - pre_release-v1.2-v1.5-branch
+              labels:
+                  - backport-pre_release-v1.2-v1.5-branch
+
+    - name: Backport to pre_release-v1.1-v1.6.1-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-pre_release-v1.1-v1.6.1-branch"
+      actions:
+          backport:
+              branches:
+                  - pre_release-v1.1-v1.6.1-branch
+              labels:
+                  - backport-pre_release-v1.1-v1.6.1-branch
+
+    - name: Backport to v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - v1.5-branch
+              labels:
+                  - backport-v1.5-branch
+
+    - name: Backport to release-v1.4-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^dev-tlk_
+          - label="request-backport-release-v1.4-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - release-v1.4-v1.5-branch
+              labels:
+                  - backport-release-v1.4-v1.5-branch
+
+    - name: Request review for MVE/SVE backports
+      conditions:
+          - author=mergify[bot]
+          - or:
+                - label~=mve-branch
+                - label~=sve-branch
+      actions:
+          request_reviews:
+              users:
+                  - cecille
+
+
     # Auto-merge backport PRs when CI is green and there are no conflicts.
     # If a cherry-pick has conflicts or CI fails, the PR is left open for manual resolution.
     # WARNING: If the rule name below is changed, you must also update the
@@ -103,6 +202,11 @@ pull_request_rules:
                 - label="backport-v1.6-branch"
                 - label="backport-v1.5-branch"
                 - label="backport-v1.4.2-branch"
+                - label="backport-release-v1.0-v1.5-branch"
+                - label="backport-release-v1.4-v1.5-branch"
+                - label="backport-pre_release-v1.1-v1.5-branch"
+                - label="backport-pre_release-v1.2-v1.5-branch"
+                - label="backport-pre_release-v1.1-v1.6.1-branch"
           - author=mergify[bot]
           - "-conflict"
           - "-draft"
