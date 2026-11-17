@@ -280,10 +280,12 @@ CHIP_ERROR BLEManagerImpl::_Init()
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
     mBLERadioInitialized  = false;
     mPrescanState         = PrescanState::kIdle;
+#if !defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
     if (mInternalScanCallback == nullptr)
     {
         mInternalScanCallback = new InternalScanCallback(this);
     }
+#endif
 #endif
 
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
