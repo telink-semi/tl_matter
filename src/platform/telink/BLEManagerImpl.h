@@ -39,6 +39,10 @@ namespace Internal {
 
 using namespace chip::Ble;
 
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
+class InternalScanCallback;
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION */
+
 /**
  * Concrete implementation of the BLEManager singleton object for the Zephyr platforms.
  */
@@ -162,7 +166,8 @@ private:
     friend BLEManagerImpl & BLEMgrImpl(void);
     bool mBLERadioInitialized = false;
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
-    friend class InitScanCallback;
+    friend class InternalScanCallback;
+    InternalScanCallback * mInternalScanCallback = nullptr;
 
     enum class PrescanState : uint8_t
     {
@@ -208,22 +213,19 @@ public:
 
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION &&                                      \
     defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE)
-class InitScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
+class InternalScanCallback : public DeviceLayer::NetworkCommissioning::ThreadDriver::ScanCallback
 {
 public:
+    explicit InternalScanCallback(BLEManagerImpl * aBLEManagerImpl) { mBLEManagerImpl = aBLEManagerImpl; }
     void OnFinished(NetworkCommissioning::Status err, CharSpan debugText,
                     NetworkCommissioning::ThreadScanResponseIterator * networks) override
     {
-        BLEManagerImpl & mBLEManagerImpl = BLEMgrImpl();
-        if (mBLEManagerImpl.mPrescanState != BLEManagerImpl::PrescanState::kInProgress ||
-            !mBLEManagerImpl._IsAdvertisingEnabled() ||
-            mBLEManagerImpl.mServiceMode != ConnectivityManager::kCHIPoBLEServiceMode_Enabled)
-        {
-            return;
-        }
-        mBLEManagerImpl.mPrescanState = BLEManagerImpl::PrescanState::kCompleted;
-        TEMPORARY_RETURN_IGNORED mBLEManagerImpl.StartAdvertising();
+        mBLEManagerImpl->mPrescanState = BLEManagerImpl::PrescanState::kCompleted;
+        TEMPORARY_RETURN_IGNORED mBLEManagerImpl->StartAdvertising();
     };
+
+private:
+    BLEManagerImpl * mBLEManagerImpl;
 };
 #endif
 

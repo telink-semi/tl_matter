@@ -278,8 +278,12 @@ CHIP_ERROR BLEManagerImpl::_Init()
     int err = 0;
     int id  = 0;
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
-    mBLERadioInitialized = false;
-    mPrescanState        = PrescanState::kIdle;
+    mBLERadioInitialized  = false;
+    mPrescanState         = PrescanState::kIdle;
+    if (mInternalScanCallback == nullptr)
+    {
+        mInternalScanCallback = new InternalScanCallback(this);
+    }
 #endif
 
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
@@ -788,8 +792,7 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
         {
             mPrescanState = PrescanState::kInProgress;
 
-            static InitScanCallback sInitScanCallback;
-            CHIP_ERROR scanErr = chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInitScanCallback);
+            CHIP_ERROR scanErr = chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(mInternalScanCallback);
             if (scanErr == CHIP_NO_ERROR)
             {
                 ChipLogProgress(DeviceLayer,
