@@ -57,6 +57,9 @@ config ALIRO_ONLY_BLE_FLOW_SUPP
 config ALIRO_BLE_UWB_FLOW_SUPP
     default y
 
+config ALIRO_BLE_UWB_AUTO_LOCK
+    default n
+
 config ALIRO_NFC_POLLER_THREAD_STACK_SIZE
     default 4096
 
