@@ -785,7 +785,7 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
         ChipLogProgress(DeviceLayer, "Device provisioned, can't StartAdvertising");
         return CHIP_ERROR_INCORRECT_STATE;
     }
-#if defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE)
+#if !defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
     if (mPrescanState == PrescanState::kIdle)
     {
         if (!mBLERadioInitialized)
@@ -814,7 +814,7 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
         ChipLogProgress(DeviceLayer, "Thread prescan is ongoing, advertising resumes from InternalScanCallback::OnFinished.");
         return CHIP_NO_ERROR;
     }
-#endif /* CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_BLE */
+#endif /* !CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP */
 #endif
 
     // Re-initializing the BLE layer after shutdown

@@ -224,24 +224,20 @@ config CHIP_ENABLE_CONCURRENT_CONNECTION
 	help
 	  Enable Matter concurrent connection support and BLE/Thread coexistence.
 
-choice CHIP_TELINK_THREAD_PRESCAN_MODE
-	prompt "Thread prescan location (non-concurrent BLE/Thread)"
+config CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP
+	bool "Run Thread prescan at application startup instead of before BLE advertising"
 	depends on !CHIP_ENABLE_CONCURRENT_CONNECTION
-	default CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP
+	default n
+	help
+	  Select where the non-concurrent BLE/Thread prescan runs.
 
-	config CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP
-		bool "Run Thread prescan at application startup (mainCommon)"
-		help
-		  Run the Thread network prescan once during application startup
-		  (blocking) in the common application init before BLE advertising
-		  starts.
+	  By default (n), the Thread network prescan runs in the BLE layer
+	  (BLEManagerImpl) right before BLE advertising starts. It is
+	  non-blocking and matches the upstream Matter implementation.
 
-	config CHIP_TELINK_THREAD_PRESCAN_AT_BLE
-		bool "Run Thread prescan in the BLE layer before advertising"
-		help
-		  Run the Thread network prescan in the BLE layer (BLEManagerImpl)
-		  right before BLE advertising starts (non-blocking).
-endchoice
+	  Enable this option (y) to run the prescan once during application
+	  startup in mainCommon instead. It is blocking (waits up to 15 s for
+	  the scan to finish) and runs before BLE advertising starts.
 
 config CHIP_ENABLE_POST_COMMISSIONING_BLE_ADVERTISING
 	bool "Enable BLE advertising after commissioning"
