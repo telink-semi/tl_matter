@@ -148,6 +148,60 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
 const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
 
+/**
+ * @brief Reset Matter persistent credentials, network info and SRP services
+ *        Performs partial factory-reset related storage erase steps
+ * @note Must finish all flash/NVS operation before firmware jump.
+ * @return CHIP_NO_ERROR on success, returns the first encountered error
+ */
+static CHIP_ERROR ResetMatterPersistentCredentials(void)
+{
+    CHIP_ERROR err = CHIP_NO_ERROR;
+
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
+    LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgr().ClearAllSrpHostAndServices());
+#endif /* CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT */
+
+    // Erase Thread network bonding & connection persistent info
+    chip::DeviceLayer::ConnectivityMgr().ErasePersistentInfo();
+
+    // Erase Matter KV storage: fabric, commissioner, pairing credentials etc.
+    err = chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().DoFactoryReset();
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Failed to reset Matter KV storage: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+
+    chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().Flush();
+    ChipLogProgress(DeviceLayer, "Reset Matter persistent credentials success");
+    return CHIP_NO_ERROR;
+}
+
+static void SwitchToZigbeeImage(void)
+{
+    uintptr_t app_start_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
+    void *boot_app = (void *)app_start_addr;
+    ChipLogProgress(DeviceLayer, "Jump address is 0x%x", app_start_addr);
+
+    // Erase the necessary matter commissioning data
+    CHIP_ERROR ret = ResetMatterPersistentCredentials();
+    if (ret != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "Matter credential reset failed, ret: %" CHIP_ERROR_FORMAT, ret.Format());
+    }
+
+    // Disable thread stack
+    chip::DeviceLayer::ThreadStackMgr().Shutdown();
+    chip::DeviceLayer::ConnectivityMgr().Shutdown();
+
+    /* Same chainload pattern MCUboot uses: lock interrupts and enter the
+     * image's first instruction (a compressed jump to its startup code).
+     */
+    irq_lock();
+    ((void (*)(void))boot_app)();
+    CODE_UNREACHABLE
+}
+
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
 
 
@@ -283,7 +337,8 @@ void dual_mode_auto_switch(int32_t op)
     {
         // clear matter nvs for unclean info in matter nvs
         flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
-        sys_reboot(SYS_REBOOT_WARM);
+        // sys_reboot(SYS_REBOOT_WARM);
+        SwitchToZigbeeImage();
     }
 }
 
@@ -472,7 +527,8 @@ static void PowerOnNetworkCheck(void)
     } else {
         return;
     }
-    k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
+    // k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
+    SwitchToZigbeeImage();
 }
 #endif
 
