@@ -336,8 +336,11 @@ void dual_mode_auto_switch(int32_t op)
     {
         // clear matter nvs for unclean info in matter nvs
         flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
-        // sys_reboot(SYS_REBOOT_WARM);
+#if CONFI_CHIP_XIP_JUMP_ACTION
         SwitchToZigbeeImage();
+#else
+        sys_reboot(SYS_REBOOT_WARM);
+#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
     }
 }
 
@@ -526,8 +529,11 @@ static void PowerOnNetworkCheck(void)
     } else {
         return;
     }
-    // k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
+#if CONFI_CHIP_XIP_JUMP_ACTION
     SwitchToZigbeeImage();
+#else
+    k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
+#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
 }
 #endif
 
