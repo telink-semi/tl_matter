@@ -172,7 +172,6 @@ static CHIP_ERROR ResetMatterPersistentCredentials(void)
         ChipLogError(DeviceLayer, "Failed to reset Matter KV storage: %" CHIP_ERROR_FORMAT, err.Format());
     }
 
-    chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().Flush();
     ChipLogProgress(DeviceLayer, "Reset Matter persistent credentials success");
     return CHIP_NO_ERROR;
 }
@@ -191,15 +190,15 @@ static void SwitchToZigbeeImage(void)
     }
 
     // Disable thread stack
-    chip::DeviceLayer::ThreadStackMgr().Shutdown();
-    chip::DeviceLayer::ConnectivityMgr().Shutdown();
+    chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false);
+    chip::DeviceLayer::ConnectivityMgr().DisconnectNetwork();
 
     /* Same chainload pattern MCUboot uses: lock interrupts and enter the
      * image's first instruction (a compressed jump to its startup code).
      */
     irq_lock();
     ((void (*)(void))boot_app)();
-    CODE_UNREACHABLE
+    CODE_UNREACHABLE;
 }
 
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
