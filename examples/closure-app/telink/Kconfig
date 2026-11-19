@@ -17,7 +17,7 @@ mainmenu "Matter Telink Closure Example Application"
 
 config CHIP_ENABLE_GROUPCAST
 	bool
-	default y
+	default n
 
 rsource "../../../config/telink/chip-module/Kconfig.defaults"
 source "Kconfig.zephyr"
