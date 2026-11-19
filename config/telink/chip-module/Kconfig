@@ -413,6 +413,14 @@ config SECURE_PROGRAMMING
     depends on CHIP_FACTORY_DATA
     default n
 
+config SECURE_PROGRAMMING_TEST_LOG
+	bool "Enable test-only secure programming logs"
+	depends on SECURE_PROGRAMMING
+	default n
+	help
+	  Test-only: print the decrypted DAC private key on the console.
+	  Never enable this in production firmware.
+
 config EXPOSE_CHIP_ID_VIA_BLE
 	bool "Enable CHIP-ID via ble"
 	depends on BT
