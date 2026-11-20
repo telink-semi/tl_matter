@@ -148,50 +148,25 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
 const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
 
-/**
- * @brief Reset Matter persistent credentials, network info and SRP services
- *        Performs partial factory-reset related storage erase steps
- * @note Must finish all flash/NVS operation before firmware jump.
- * @return CHIP_NO_ERROR on success, returns the first encountered error
- */
-static CHIP_ERROR ResetMatterPersistentCredentials(void)
+struct ImageJumpCtx
 {
-    CHIP_ERROR err = CHIP_NO_ERROR;
+    struct k_work_delayable work;
+    uintptr_t target_addr;
+};
 
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
-    LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgr().ClearAllSrpHostAndServices());
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT */
+static void JumpWorkHandler(struct k_work * work)
+{
+    struct ImageJumpCtx *ctx = CONTAINER_OF(work, struct ImageJumpCtx, work);
+    uintptr_t app_start_addr = ctx->target_addr;
 
-    // Erase Thread network bonding & connection persistent info
-    chip::DeviceLayer::ConnectivityMgr().ErasePersistentInfo();
-
-    // Erase Matter KV storage: fabric, commissioner, pairing credentials etc.
-    err = chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().DoFactoryReset();
-    if (err != CHIP_NO_ERROR)
+    if (app_start_addr == 0 || (app_start_addr & 0x3) != 0)
     {
-        ChipLogError(DeviceLayer, "Failed to reset Matter KV storage: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, "Invalid jump address 0x%lx", app_start_addr);
+        return;
     }
 
-    ChipLogProgress(DeviceLayer, "Reset Matter persistent credentials success");
-    return CHIP_NO_ERROR;
-}
-
-static void SwitchToZigbeeImage(void)
-{
-    uintptr_t app_start_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
     void *boot_app = (void *)app_start_addr;
-    ChipLogProgress(DeviceLayer, "Jump address is 0x%x", app_start_addr);
-
-    // Erase the necessary matter commissioning data
-    CHIP_ERROR ret = ResetMatterPersistentCredentials();
-    if (ret != CHIP_NO_ERROR)
-    {
-        ChipLogError(DeviceLayer, "Matter credential reset failed, ret: %" CHIP_ERROR_FORMAT, ret.Format());
-    }
-
-    // Disable thread stack
-    chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false);
-    chip::DeviceLayer::ConnectivityMgr().DisconnectNetwork();
+    ChipLogProgress(DeviceLayer, "Ready to jump to Zigbee, addr: 0x%lx", app_start_addr);
 
     /* Same chainload pattern MCUboot uses: lock interrupts and enter the
      * image's first instruction (a compressed jump to its startup code).
@@ -199,6 +174,42 @@ static void SwitchToZigbeeImage(void)
     irq_lock();
     ((void (*)(void))boot_app)();
     CODE_UNREACHABLE;
+}
+
+static struct ImageJumpCtx sJumpCtx = {
+    .work = Z_WORK_DELAYABLE_INITIALIZER(JumpWorkHandler),
+    .target_addr = 0,
+};
+
+static void ScheduleFirmwareJump(uintptr_t target_addr)
+{
+    CHIP_ERROR err;
+
+    if (k_work_delayable_is_pending(&sJumpCtx.work))
+    {
+        k_work_cancel_delayable(&sJumpCtx.work);
+        ChipLogProgress(DeviceLayer, "Cancel previous pending jump work");
+    }
+    sJumpCtx.target_addr = target_addr;
+
+    // Disable openthread
+    err = chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "SetThreadEnabled(false) fail: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+
+    // Erase the necessary matter commissioning data
+    AppFabricTableDelegate::ResetMatterPersistentCredentials();
+
+    ChipLogProgress(DeviceLayer, "Schedule jump to 0x%lx after 2s", target_addr);
+    k_work_schedule(&sJumpCtx.work, K_SECONDS(2));
+}
+
+static void SwitchToZigbeeImage(void)
+{
+    uintptr_t zb_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
+    ScheduleFirmwareJump(zb_addr);
 }
 
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
