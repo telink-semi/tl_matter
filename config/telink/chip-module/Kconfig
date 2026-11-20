@@ -340,3 +340,7 @@ config SECURE_PROGRAMMING
 	bool "Enable reading DAC and keys from the DAC partition"
 	depends on CHIP_FACTORY_DATA
 	default n
+
+config CHIP_XIP_JUMP_ACTION
+	bool "Enable xip jump from matter to zigbee"
+	default y

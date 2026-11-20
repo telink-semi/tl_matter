@@ -148,6 +148,70 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
 const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
 
+struct ImageJumpCtx
+{
+    struct k_work_delayable work;
+    uintptr_t target_addr;
+};
+
+static void JumpWorkHandler(struct k_work * work)
+{
+    struct ImageJumpCtx *ctx = CONTAINER_OF(work, struct ImageJumpCtx, work);
+    uintptr_t app_start_addr = ctx->target_addr;
+
+    if (app_start_addr == 0 || (app_start_addr & 0x3) != 0)
+    {
+        ChipLogError(DeviceLayer, "Invalid jump address 0x%lx", app_start_addr);
+        return;
+    }
+
+    void *boot_app = (void *)app_start_addr;
+    ChipLogProgress(DeviceLayer, "Ready to jump to Zigbee, addr: 0x%lx", app_start_addr);
+
+    /* Same chainload pattern MCUboot uses: lock interrupts and enter the
+     * image's first instruction (a compressed jump to its startup code).
+     */
+    irq_lock();
+    ((void (*)(void))boot_app)();
+    CODE_UNREACHABLE;
+}
+
+static struct ImageJumpCtx sJumpCtx = {
+    .work = Z_WORK_DELAYABLE_INITIALIZER(JumpWorkHandler),
+    .target_addr = 0,
+};
+
+static void ScheduleFirmwareJump(uintptr_t target_addr)
+{
+    CHIP_ERROR err;
+
+    if (k_work_delayable_is_pending(&sJumpCtx.work))
+    {
+        k_work_cancel_delayable(&sJumpCtx.work);
+        ChipLogProgress(DeviceLayer, "Cancel previous pending jump work");
+    }
+    sJumpCtx.target_addr = target_addr;
+
+    // Disable openthread
+    err = chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false);
+    if (err != CHIP_NO_ERROR)
+    {
+        ChipLogError(DeviceLayer, "SetThreadEnabled(false) fail: %" CHIP_ERROR_FORMAT, err.Format());
+    }
+
+    // Erase the necessary matter commissioning data
+    AppFabricTableDelegate::ResetMatterPersistentCredentials();
+
+    ChipLogProgress(DeviceLayer, "Schedule jump to 0x%lx after 2s", target_addr);
+    k_work_schedule(&sJumpCtx.work, K_SECONDS(2));
+}
+
+static void SwitchToZigbeeImage(void)
+{
+    uintptr_t zb_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
+    ScheduleFirmwareJump(zb_addr);
+}
+
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
 
 
@@ -283,7 +347,11 @@ void dual_mode_auto_switch(int32_t op)
     {
         // clear matter nvs for unclean info in matter nvs
         flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
+#if CONFI_CHIP_XIP_JUMP_ACTION
+        SwitchToZigbeeImage();
+#else
         sys_reboot(SYS_REBOOT_WARM);
+#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
     }
 }
 
@@ -472,7 +540,11 @@ static void PowerOnNetworkCheck(void)
     } else {
         return;
     }
+#if CONFI_CHIP_XIP_JUMP_ACTION
+    SwitchToZigbeeImage();
+#else
     k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
+#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
 }
 #endif
 
