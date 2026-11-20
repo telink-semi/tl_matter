@@ -1,5 +1,5 @@
 #
-#    Copyright (c) 2022-2025 Project CHIP Authors
+#    Copyright (c) 2026 Project CHIP Authors
 #
 #    Licensed under the Apache License, Version 2.0 (the "License");
 #    you may not use this file except in compliance with the License.
@@ -24,13 +24,13 @@ include(${TELINK_COMMON}/common.cmake)
 include(${CHIP_ROOT}/config/telink/app/enable-gnu-std.cmake)
 include(${CHIP_ROOT}/src/app/chip_data_model.cmake)
 
-project(chip-telink-lighting-example)
+project(chip-telink-closure-example)
 
 target_include_directories(app PRIVATE
                            include
                            ${CMAKE_CURRENT_SOURCE_DIR}/../closure-common/include
                            ${GEN_DIR}/app-common
-                           ${GEN_DIR}/lighting-app
+                           ${GEN_DIR}/closure-app
                            ${TELINK_COMMON}/common/include
                            ${TELINK_COMMON}/util/include
                            ${TELINK_COMMON}/app/include
@@ -70,10 +70,15 @@ if(CONFIG_BOOTLOADER_MCUBOOT)
 endif()
 
 if(CONFIG_MCUMGR_TRANSPORT_BT)
-    zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
-    target_sources(app PRIVATE ${TELINK_COMMON}/util/src/DFUOverSMP.cpp)
+  zephyr_library_link_libraries(MCUBOOT_BOOTUTIL)
+  target_sources(app PRIVATE ${TELINK_COMMON}/util/src/DFUOverSMP.cpp)
 endif()
 
 if (CONFIG_CHIP_PW_RPC)
   include(${TELINK_COMMON}/Rpc.cmake)
 endif(CONFIG_CHIP_PW_RPC)
+
+if(CONFIG_OPENTHREAD_SNTP_CLIENT)
+  target_sources(app PRIVATE
+                   ${TELINK_COMMON}/util/src/ThreadTimeSync.cpp)
+endif()
