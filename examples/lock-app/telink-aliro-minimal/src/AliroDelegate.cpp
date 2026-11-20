@@ -274,6 +274,9 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         return CHIP_NO_ERROR;
     }
 
+    CHIP_ERROR startErr = CHIP_NO_ERROR;
+    bool transportStarted = false;
+
 #if CONFIG_ALIRO_TRANSPORT_NFC || CONFIG_ALIRO_TRANSPORT_BLE
     int err;
 #endif
@@ -285,10 +288,15 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         if (err != 0 && err != -EALREADY)
         {
             ChipLogError(Zcl, "Failed to start Aliro NFC: %d", err);
-            return CHIP_ERROR_INTERNAL;
+            startErr = CHIP_ERROR_INTERNAL;
         }
-        mAliroNfcStarted = true;
+        else
+        {
+            mAliroNfcStarted = true;
+        }
     }
+
+    transportStarted |= mAliroNfcStarted;
 #endif
 
 #if CONFIG_ALIRO_TRANSPORT_BLE
@@ -298,13 +306,18 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         if (err != 0)
         {
             ChipLogError(Zcl, "Failed to start Aliro BLE: %d", err);
-            return CHIP_ERROR_INTERNAL;
+            startErr = CHIP_ERROR_INTERNAL;
         }
-        mAliroBleStarted = true;
+        else
+        {
+            mAliroBleStarted = true;
+        }
     }
+
+    transportStarted |= mAliroBleStarted;
 #endif
 
-    return CHIP_NO_ERROR;
+    return transportStarted ? CHIP_NO_ERROR : startErr;
 }
 
 CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, const ByteSpan & verificationKey,

@@ -65,7 +65,7 @@ void ApplyAliroLockState(intptr_t argument)
         return;
     }
 
-    LOG_INF("Applying authenticated Aliro RKE action on Matter thread: %s",
+    LOG_INF("Applying authenticated Aliro action on Matter thread: %s",
             state == TELINK_ALIRO_LOCK_STATE_SECURED ? "SECURED" : "UNSECURED");
 
     if (!LockMgr().LockAction(AppEvent::kEventType_DeviceAction, action, LockManager::OperationSource::kAliro,

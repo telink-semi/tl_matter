@@ -62,6 +62,15 @@ void MatterPostAttributeChangeCallback(const chip::app::ConcreteAttributePath & 
  */
 void emberAfDoorLockClusterInitCallback(chip::EndpointId endpoint) {}
 
+void emberAfPluginDoorLockOnAutoRelock(chip::EndpointId endpointId)
+{
+    if (!LockMgr().LockAction(AppEvent::kEventType_DeviceAction, LockManager::LOCK_ACTION,
+                              LockManager::OperationSource::kAuto, endpointId))
+    {
+        ChipLogError(Zcl, "Auto relock action failed for endpoint %u", endpointId);
+    }
+}
+
 bool emberAfPluginDoorLockOnDoorLockCommand(chip::EndpointId endpointId, const Nullable<chip::FabricIndex> & fabricIdx,
                                             const Nullable<chip::NodeId> & nodeId, const Optional<chip::ByteSpan> & pinCode,
                                             OperationErrorEnum & err)
