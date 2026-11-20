@@ -278,14 +278,8 @@ CHIP_ERROR BLEManagerImpl::_Init()
     int err = 0;
     int id  = 0;
 #if CHIP_DEVICE_CONFIG_ENABLE_THREAD && !CHIP_DEVICE_CONFIG_SUPPORTS_CONCURRENT_CONNECTION
-    mBLERadioInitialized  = false;
-    mPrescanState         = PrescanState::kIdle;
-#if !defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
-    if (mInternalScanCallback == nullptr)
-    {
-        mInternalScanCallback = new InternalScanCallback(this);
-    }
-#endif
+    mBLERadioInitialized = false;
+    mPrescanState        = PrescanState::kIdle;
 #endif
 
     mServiceMode = ConnectivityManager::kCHIPoBLEServiceMode_Enabled;
@@ -787,14 +781,14 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
         ChipLogProgress(DeviceLayer, "Device provisioned, can't StartAdvertising");
         return CHIP_ERROR_INCORRECT_STATE;
     }
-#if !defined(CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP)
     if (mPrescanState == PrescanState::kIdle)
     {
         if (!mBLERadioInitialized)
         {
             mPrescanState = PrescanState::kInProgress;
 
-            CHIP_ERROR scanErr = chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(mInternalScanCallback);
+            static InitScanCallback sInitScanCallback;
+            CHIP_ERROR scanErr = chip::DeviceLayer::ThreadStackMgrImpl().StartThreadScan(&sInitScanCallback);
             if (scanErr == CHIP_NO_ERROR)
             {
                 ChipLogProgress(DeviceLayer,
@@ -816,7 +810,6 @@ CHIP_ERROR BLEManagerImpl::StartAdvertising()
         ChipLogProgress(DeviceLayer, "Thread prescan is ongoing, advertising resumes from InternalScanCallback::OnFinished.");
         return CHIP_NO_ERROR;
     }
-#endif /* !CONFIG_CHIP_TELINK_THREAD_PRESCAN_AT_STARTUP */
 #endif
 
     // Re-initializing the BLE layer after shutdown
