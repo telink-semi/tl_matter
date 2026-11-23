@@ -128,7 +128,7 @@ pull_request_rules:
           - merged
           - or:
                 - base=master
-                - base~=^v[0-9.]+-branch$
+                - base~=^v.+-branch$
                 # down-port from the newer dev line
                 - base=dev-tlk_v1.6.1
           - label="request-backport-dev-tlk_v1.5"
@@ -144,7 +144,7 @@ pull_request_rules:
           - merged
           - or:
                 - base=master
-                - base~=^v[0-9.]+-branch$
+                - base~=^v.+-branch$
                 # forward-port from the previous dev line
                 - base=dev-tlk_v1.5
           - label="request-backport-dev-tlk_v1.6.1"
