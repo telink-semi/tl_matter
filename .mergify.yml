@@ -42,19 +42,49 @@ pull_request_rules:
               method: squash
 
     # Backport rules - cherry-pick the squashed master commit after merge.
-    # Apply label request-backport-sve or request-backport-supported on the master PR
-    # (before or after merge) to trigger the corresponding backport.
-    - name: Backport to v1.6-sve-branch
+    # Apply a request-backport-* label (such as request-backport-latest or
+    # request-backport-supported) on the master PR (before or after merge)
+    # to trigger the corresponding backport.
+    - name: Backport to v1.7-branch
       conditions:
           - merged
           - base=master
-          - label="request-backport-sve"
+          - or:
+                - label="request-backport-latest-mve-sve"
+                - label="request-backport-latest"
+                - label="request-backport-supported"
       actions:
           backport:
               branches:
-                  - v1.6-sve-branch
+                  - v1.7-branch
               labels:
-                  - backport-v1.6-sve-branch
+                  - backport-v1.7-branch
+
+    - name: Backport to v1.6.1-branch
+      conditions:
+          - merged
+          - base=master
+          - or:
+                - label="request-backport-latest-mve-sve"
+                - label="request-backport-supported"
+      actions:
+          backport:
+              branches:
+                  - v1.6.1-branch
+              labels:
+                  - backport-v1.6.1-branch
+
+    - name: Backport to v1.6.1-mve-branch
+      conditions:
+          - merged
+          - base=master
+          - label="request-backport-latest-mve-sve"
+      actions:
+          backport:
+              branches:
+                  - v1.6.1-mve-branch
+              labels:
+                  - backport-v1.6.1-mve-branch
 
     - name: Backport to v1.6-branch
       conditions:
@@ -68,19 +98,6 @@ pull_request_rules:
               labels:
                   - backport-v1.6-branch
 
-    - name: Backport to v1.5-branch
-      conditions:
-          - merged
-          - base=master
-          - label="request-backport-supported"
-      actions:
-          backport:
-              branches:
-                  - v1.5-branch
-              labels:
-                  - backport-v1.5-branch
-
-
     - name: Backport to v1.4.2-branch
       conditions:
           - merged
@@ -93,14 +110,86 @@ pull_request_rules:
               labels:
                   - backport-v1.4.2-branch
 
-    # Telink fork backport rules - cherry-pick the squashed dev/master commit.
-    # Apply a request-backport-<branch> label on a dev-tlk_v* / master PR.
-    - name: Backport to release-v1.0-v1.5-branch
+    # ===== Telink fork backport rules =====
+    # One rule per target branch (Mergify has no templating). Trigger labels are
+    # request-backport-<target>; the generated PR is labelled backport-<target>,
+    # so a backport PR never re-triggers these rules (no ping-pong between the
+    # dev branches). Every rule is label-gated: nothing is backported by default.
+    #
+    # Source bases by target family (verified against the real branch layout):
+    #   * upstream mirror branches (v1.5/v1.6/v1.6.1/v1.7/v1.4.2) <- base=master
+    #   * dev-tlk_v1.5 / dev-tlk_v1.6.1 <- master, v*-branch, or the other dev line
+    #   * v1.5 family release/pre_release     <- base=dev-tlk_v1.5 (or master)
+    #   * v1.6.1 family release/pre_release   <- base=dev-tlk_v1.6.1 (or master)
+
+    # --- upstream (master / v*-branch) and cross-dev sync -> dev branches ---
+    - name: Backport to dev-tlk_v1.5
       conditions:
           - merged
           - or:
                 - base=master
-                - base~=^dev-tlk_
+                - base~=^v[0-9.]+-branch$
+                # down-port from the newer dev line
+                - base=dev-tlk_v1.6.1
+          - label="request-backport-dev-tlk_v1.5"
+      actions:
+          backport:
+              branches:
+                  - dev-tlk_v1.5
+              labels:
+                  - backport-dev-tlk_v1.5
+
+    - name: Backport to dev-tlk_v1.6.1
+      conditions:
+          - merged
+          - or:
+                - base=master
+                - base~=^v[0-9.]+-branch$
+                # forward-port from the previous dev line
+                - base=dev-tlk_v1.5
+          - label="request-backport-dev-tlk_v1.6.1"
+      actions:
+          backport:
+              branches:
+                  - dev-tlk_v1.6.1
+              labels:
+                  - backport-dev-tlk_v1.6.1
+
+    # --- dev-tlk_v1.5 family -> v1.5 release / pre-release branches ---
+    - name: Backport to release-v1.5-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=dev-tlk_v1.5
+                - base=master
+          - label="request-backport-release-v1.5-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - release-v1.5-v1.5-branch
+              labels:
+                  - backport-release-v1.5-v1.5-branch
+
+    - name: Backport to release-v1.4-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=dev-tlk_v1.5
+                - base=master
+          - label="request-backport-release-v1.4-v1.5-branch"
+      actions:
+          backport:
+              branches:
+                  - release-v1.4-v1.5-branch
+              labels:
+                  - backport-release-v1.4-v1.5-branch
+
+    - name: Backport to release-v1.0-v1.5-branch
+      conditions:
+          - merged
+          - or:
+                - base=dev-tlk_v1.5
+                - base=master
           - label="request-backport-release-v1.0-v1.5-branch"
       actions:
           backport:
@@ -113,8 +202,8 @@ pull_request_rules:
       conditions:
           - merged
           - or:
+                - base=dev-tlk_v1.5
                 - base=master
-                - base~=^dev-tlk_
           - label="request-backport-pre_release-v1.1-v1.5-branch"
       actions:
           backport:
@@ -127,8 +216,8 @@ pull_request_rules:
       conditions:
           - merged
           - or:
+                - base=dev-tlk_v1.5
                 - base=master
-                - base~=^dev-tlk_
           - label="request-backport-pre_release-v1.2-v1.5-branch"
       actions:
           backport:
@@ -137,12 +226,27 @@ pull_request_rules:
               labels:
                   - backport-pre_release-v1.2-v1.5-branch
 
+    # --- dev-tlk_v1.6.1 family -> v1.6.1 release / pre-release branches ---
+    - name: Backport to release-v1.6-v1.6.1-branch
+      conditions:
+          - merged
+          - or:
+                - base=dev-tlk_v1.6.1
+                - base=master
+          - label="request-backport-release-v1.6-v1.6.1-branch"
+      actions:
+          backport:
+              branches:
+                  - release-v1.6-v1.6.1-branch
+              labels:
+                  - backport-release-v1.6-v1.6.1-branch
+
     - name: Backport to pre_release-v1.1-v1.6.1-branch
       conditions:
           - merged
           - or:
+                - base=dev-tlk_v1.6.1
                 - base=master
-                - base~=^dev-tlk_
           - label="request-backport-pre_release-v1.1-v1.6.1-branch"
       actions:
           backport:
@@ -151,12 +255,13 @@ pull_request_rules:
               labels:
                   - backport-pre_release-v1.1-v1.6.1-branch
 
+    # --- Telink dev -> upstream mirror branch ---
     - name: Backport to v1.5-branch
       conditions:
           - merged
           - or:
+                - base=dev-tlk_v1.5
                 - base=master
-                - base~=^dev-tlk_
           - label="request-backport-v1.5-branch"
       actions:
           backport:
@@ -164,20 +269,6 @@ pull_request_rules:
                   - v1.5-branch
               labels:
                   - backport-v1.5-branch
-
-    - name: Backport to release-v1.4-v1.5-branch
-      conditions:
-          - merged
-          - or:
-                - base=master
-                - base~=^dev-tlk_
-          - label="request-backport-release-v1.4-v1.5-branch"
-      actions:
-          backport:
-              branches:
-                  - release-v1.4-v1.5-branch
-              labels:
-                  - backport-release-v1.4-v1.5-branch
 
     - name: Request review for MVE/SVE backports
       conditions:
@@ -190,7 +281,6 @@ pull_request_rules:
               users:
                   - cecille
 
-
     # Auto-merge backport PRs when CI is green and there are no conflicts.
     # If a cherry-pick has conflicts or CI fails, the PR is left open for manual resolution.
     # WARNING: If the rule name below is changed, you must also update the
@@ -198,7 +288,8 @@ pull_request_rules:
     - name: Auto-merge clean backport PRs
       conditions:
           - or:
-                - label="backport-v1.6-sve-branch"
+                - label="backport-v1.7-branch"
+                - label="backport-v1.6.1-branch"
                 - label="backport-v1.6-branch"
                 - label="backport-v1.5-branch"
                 - label="backport-v1.4.2-branch"
@@ -207,6 +298,10 @@ pull_request_rules:
                 - label="backport-pre_release-v1.1-v1.5-branch"
                 - label="backport-pre_release-v1.2-v1.5-branch"
                 - label="backport-pre_release-v1.1-v1.6.1-branch"
+                - label="backport-dev-tlk_v1.5"
+                - label="backport-dev-tlk_v1.6.1"
+                - label="backport-release-v1.5-v1.5-branch"
+                - label="backport-release-v1.6-v1.6.1-branch"
           - author=mergify[bot]
           - "-conflict"
           - "-draft"
