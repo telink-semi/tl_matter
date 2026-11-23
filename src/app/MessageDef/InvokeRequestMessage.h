@@ -92,6 +92,13 @@ public:
     InvokeRequestMessage::Builder & TimedRequest(const bool aTimedRequest);
 
     /**
+     * Encode request flags for the destination. Groupcast omits both fields; peers at revision 14 or later
+     * omit false fields. Other peers require both fields.
+     * Setting TimedRequest to true on a group request sets CHIP_ERROR_INVALID_ARGUMENT.
+     */
+    InvokeRequestMessage::Builder & RequestFlags(const RequestFlagsOptions & options);
+
+    /**
      *  @brief Initialize a InvokeRequests::Builder for writing into the TLV stream
      *
      *  @return A reference to InvokeRequests::Builder

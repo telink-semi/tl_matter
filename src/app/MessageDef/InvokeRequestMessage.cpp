@@ -139,6 +139,12 @@ InvokeRequestMessage::Builder & InvokeRequestMessage::Builder::TimedRequest(cons
     return *this;
 }
 
+InvokeRequestMessage::Builder & InvokeRequestMessage::Builder::RequestFlags(const RequestFlagsOptions & options)
+{
+    mError = EncodeRequestFlags(options, TLV::ContextTag(Tag::kSuppressResponse), TLV::ContextTag(Tag::kTimedRequest));
+    return *this;
+}
+
 InvokeRequests::Builder & InvokeRequestMessage::Builder::CreateInvokeRequests(const bool aReserveEndBuffer)
 {
     if (mError == CHIP_NO_ERROR)
