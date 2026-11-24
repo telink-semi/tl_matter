@@ -342,5 +342,9 @@ config SECURE_PROGRAMMING
 	default n
 
 config CHIP_XIP_JUMP_ACTION
-	bool "Enable xip jump from matter to zigbee"
-	default y
+	bool "Enable XIP firmware jump between Matter and Zigbee"
+	default n
+	help
+	  Enable single-core dual-protocol runtime switching.
+	  Allows erasing Matter credentials and performing XIP image jump
+	  between Matter and Zigbee firmware on Telink platform.

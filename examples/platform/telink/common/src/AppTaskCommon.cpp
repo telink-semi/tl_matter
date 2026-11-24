@@ -61,6 +61,13 @@
 #include <app/clusters/ota-requestor/OTARequestorInterface.h>
 #endif
 
+extern "C" {
+#if CONFIG_CHIP_XIP_JUMP_ACTION
+#include <clock.h>
+#include <watchdog.h>
+#endif
+}
+
 bool AppTaskCommon::sIsCommissioningFailed = false;
 
 #include "Reboot.h"
@@ -148,68 +155,45 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
 const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
 
-struct ImageJumpCtx
+static void JumpWorkHandler(uintptr_t target_addr)
 {
-    struct k_work_delayable work;
-    uintptr_t target_addr;
-};
-
-static void JumpWorkHandler(struct k_work * work)
-{
-    struct ImageJumpCtx *ctx = CONTAINER_OF(work, struct ImageJumpCtx, work);
-    uintptr_t app_start_addr = ctx->target_addr;
-
-    if (app_start_addr == 0 || (app_start_addr & 0x3) != 0)
-    {
-        ChipLogError(DeviceLayer, "Invalid jump address 0x%lx", app_start_addr);
-        return;
-    }
-
-    void *boot_app = (void *)app_start_addr;
-    ChipLogProgress(DeviceLayer, "Ready to jump to Zigbee, addr: 0x%lx", app_start_addr);
+    void *boot_app = (void *)target_addr;
+    ChipLogProgress(DeviceLayer, 
+        "Ready to jump to Zigbee, addr: 0x%lx", (unsigned long)target_addr);
 
     /* Same chainload pattern MCUboot uses: lock interrupts and enter the
      * image's first instruction (a compressed jump to its startup code).
      */
     irq_lock();
+    clock_set_all_clock_to_default();
+    wd_32k_feed();
     ((void (*)(void))boot_app)();
     CODE_UNREACHABLE;
 }
 
-static struct ImageJumpCtx sJumpCtx = {
-    .work = Z_WORK_DELAYABLE_INITIALIZER(JumpWorkHandler),
-    .target_addr = 0,
-};
-
-static void ScheduleFirmwareJump(uintptr_t target_addr)
+static void SwitchToZigbeeImage(void)
 {
     CHIP_ERROR err;
-
-    if (k_work_delayable_is_pending(&sJumpCtx.work))
-    {
-        k_work_cancel_delayable(&sJumpCtx.work);
-        ChipLogProgress(DeviceLayer, "Cancel previous pending jump work");
-    }
-    sJumpCtx.target_addr = target_addr;
+    uintptr_t app_start_addr;
 
     // Disable openthread
     err = chip::DeviceLayer::ThreadStackMgr().SetThreadEnabled(false);
     if (err != CHIP_NO_ERROR)
     {
-        ChipLogError(DeviceLayer, "SetThreadEnabled(false) fail: %" CHIP_ERROR_FORMAT, err.Format());
+        ChipLogError(DeviceLayer, 
+            "SetThreadEnabled(false) fail: %" CHIP_ERROR_FORMAT, err.Format());
     }
-
     // Erase the necessary matter commissioning data
-    AppFabricTableDelegate::ResetMatterPersistentCredentials();
+    flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
 
-    ChipLogProgress(DeviceLayer, "Schedule jump to 0x%lx after 2s", target_addr);
-    k_work_schedule(&sJumpCtx.work, K_SECONDS(2));
-}
-
-static void SwitchToZigbeeImage(void)
-{
-    uintptr_t zb_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
-    ScheduleFirmwareJump(zb_addr);
+    app_start_addr = DT_FIXED_PARTITION_ADDR(DT_NODELABEL(slot0_zb_partition));
+    if (app_start_addr == 0)
+    {
+        ChipLogError(DeviceLayer, 
+            "[BREAK] Invalid address 0x%lx", (unsigned long) app_start_addr);
+        return;
+    }
+    JumpWorkHandler(app_start_addr);
 }
 
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
@@ -342,16 +326,16 @@ void dual_mode_auto_switch(int32_t op)
         flash_write(flash_para_dev, DUAL_MODE_PARTITION_OFFSET, &boot_flag, sizeof(boot_flag));
     }
 
-    // need to reboot ,switch to bootloader
+    // Switch to zigbee
     if (op == OPCODE_SWITCH_ZIGBEE)
     {
-        // clear matter nvs for unclean info in matter nvs
-        flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
-#if CONFI_CHIP_XIP_JUMP_ACTION
+#if CONFIG_CHIP_XIP_JUMP_ACTION
         SwitchToZigbeeImage();
 #else
+        // clear matter nvs for unclean info in matter nvs
+        flash_erase(matter_nvs_dev, MATTER_NVS_PARTITION_OFFSET, MATTER_NVS_PARTITION_SIZE);
         sys_reboot(SYS_REBOOT_WARM);
-#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
+#endif /* CONFIG_CHIP_XIP_JUMP_ACTION */
     }
 }
 
@@ -516,7 +500,7 @@ void AppTaskCommon::DnssTimerTimeoutCallback(k_timer * timer)
      */
     if (sBoot_zb)
     {
-        printk("Matter: DnssTimer expired. Rebooting...\n");
+        printk("Matter: DnssTimer expired.\n");
         dual_mode_auto_switch(OPCODE_SWITCH_ZIGBEE);
     }
 }
@@ -540,11 +524,10 @@ static void PowerOnNetworkCheck(void)
     } else {
         return;
     }
-#if CONFI_CHIP_XIP_JUMP_ACTION
-    SwitchToZigbeeImage();
-#else
+#if CONFIG_CHIP_XIP_JUMP_ACTION
+    dual_mode_auto_switch(OPCODE_SWITCH_ZIGBEE);
+#endif /* CONFIG_CHIP_XIP_JUMP_ACTION */
     k_work_schedule(&sDelayedFactoryResetWork, K_SECONDS(2));
-#endif /* CONFI_CHIP_XIP_JUMP_ACTION */
 }
 #endif
 
@@ -1239,7 +1222,7 @@ void AppTaskCommon::ChipEventHandler(const ChipDeviceEvent * event, intptr_t /* 
         if (sBoot_zb)
         {
             dual_mode_auto_switch(OPCODE_SWITCH_ZIGBEE);
-            printk("FailSafeTimer expired; Matter commissioning failed. Rebooting to Zigbee mode...\n");
+            printk("FailSafeTimer expired; Matter commissioning failed. Jump to Zigbee\n");
         }
         else
 #endif
