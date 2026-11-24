@@ -40,25 +40,6 @@ public:
 #endif // CONFIG_CHIP_LAST_FABRIC_REMOVED_NONE
     }
 
-    static void ResetMatterPersistentCredentials(void)
-    {
-        CHIP_ERROR err;
-
-#if CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
-        LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgr().ClearAllSrpHostAndServices());
-#endif /* CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT */
-       // Erase Matter data
-        err = chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().DoFactoryReset();
-        if (err != CHIP_NO_ERROR)
-        {
-            ChipLogError(DeviceLayer, "Factory reset err: %" CHIP_ERROR_FORMAT, err.Format());
-        }
-        // Erase Network credentials
-        chip::DeviceLayer::ConnectivityMgr().ErasePersistentInfo();
-
-        ChipLogProgress(DeviceLayer, "ResetMatterPersistentCredentials done");
-    }
-
 private:
     void OnFabricRemoved(const chip::FabricTable & fabricTable, chip::FabricIndex fabricIndex)
     {
@@ -121,8 +102,17 @@ private:
                 AppTask::MicroSpeechProcessStop();
 #endif
 #elif defined(CONFIG_CHIP_LAST_FABRIC_REMOVED_ERASE_AND_PAIRING_START)
-                /* Reset Matter data, network credentials */
-                ResetMatterPersistentCredentials();
+#if CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
+                LogErrorOnFailure(chip::DeviceLayer::ThreadStackMgr().ClearAllSrpHostAndServices());
+#endif // CHIP_DEVICE_CONFIG_ENABLE_THREAD_SRP_CLIENT
+       // Erase Matter data
+                CHIP_ERROR err = chip::DeviceLayer::PersistedStorage::KeyValueStoreMgrImpl().DoFactoryReset();
+                if (err != CHIP_NO_ERROR)
+                {
+                    ChipLogError(DeviceLayer, "Factory reset err: %" CHIP_ERROR_FORMAT, err.Format());
+                }
+                // Erase Network credentials and disconnect
+                chip::DeviceLayer::ConnectivityMgr().ErasePersistentInfo();
 #ifdef CONFIG_CHIP_WIFI
                 LogErrorOnFailure(chip::DeviceLayer::WiFiManager::Instance().Disconnect());
                 chip::DeviceLayer::ConnectivityMgr().ClearWiFiStationProvision();
