@@ -65,7 +65,6 @@ private:
     // Aliro provisioning state
     uint8_t mAliroReaderVerificationKey[chip::app::Clusters::DoorLock::kAliroReaderVerificationKeySize];
     uint8_t mAliroReaderGroupIdentifier[chip::app::Clusters::DoorLock::kAliroReaderGroupIdentifierSize];
-    uint8_t mAliroReaderGroupSubIdentifier[chip::app::Clusters::DoorLock::kAliroReaderGroupSubIdentifierSize];
     uint8_t mAliroGroupResolvingKey[chip::app::Clusters::DoorLock::kAliroGroupResolvingKeySize];
     bool mAliroStateInitialized = false;
     bool mAliroHasGroupResolvingKey = false;

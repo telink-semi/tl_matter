@@ -43,11 +43,103 @@ using namespace ::chip::DeviceLayer::Internal;
 AppTask AppTask::sAppTask;
 
 namespace {
+void ClearAliroStateAfterLastFabric(intptr_t)
+{
+    if (Server::GetInstance().GetFabricTable().FabricCount() != 0)
+    {
+        return;
+    }
+
+    bool success = true;
+
+    CHIP_ERROR err = AliroDelegate::GetInstance().ClearAliroReaderConfig();
+    if (err != CHIP_NO_ERROR)
+    {
+        LOG_ERR("[Aliro] Failed to clear reader config: %" CHIP_ERROR_FORMAT,
+                err.Format());
+        success = false;
+    }
+
+    for (uint16_t index = 1; index <= APP_MAX_USERS; ++index)
+    {
+        if (!LockMgr().SetUser(kExampleEndpointId, index, 0, 0, CharSpan{}, 0,
+                               UserStatusEnum::kAvailable,
+                               UserTypeEnum::kUnrestrictedUser,
+                               CredentialRuleEnum::kSingle, nullptr, 0))
+        {
+            LOG_ERR("[Aliro] Failed to clear user %u", index);
+            success = false;
+        }
+    }
+
+    const struct
+    {
+        CredentialTypeEnum type;
+        uint16_t count;
+    } credentials[] = {
+        { CredentialTypeEnum::kAliroCredentialIssuerKey, APP_MAX_ALIRO_ISSUER_KEYS },
+        { CredentialTypeEnum::kAliroEvictableEndpointKey, APP_MAX_ALIRO_ENDPOINT_KEYS },
+        { CredentialTypeEnum::kAliroNonEvictableEndpointKey, APP_MAX_ALIRO_ENDPOINT_KEYS },
+        { CredentialTypeEnum::kPin, APP_MAX_PIN_CREDENTIALS },
+    };
+
+    for (const auto & credential : credentials)
+    {
+        for (uint16_t index = 1; index <= credential.count; ++index)
+        {
+            if (!LockMgr().SetCredential(kExampleEndpointId, index, 0, 0,
+                                         DlCredentialStatus::kAvailable,
+                                         credential.type, ByteSpan{}))
+            {
+                LOG_ERR("[Aliro] Failed to clear credential type=%u index=%u",
+                        static_cast<unsigned>(credential.type), index);
+                success = false;
+            }
+        }
+    }
+
+    if (success)
+    {
+        LOG_INF("[Aliro] Reader configuration, users and credentials cleared");
+    }
+    else
+    {
+        LOG_ERR("[Aliro] Cleanup incomplete");
+    }
+}
+
+void OnAliroFabricRemoved(EndpointId endpointId, FabricIndex fabricIndex)
+{
+    if (endpointId != kExampleEndpointId)
+    {
+        return;
+    }
+
+    const auto fabricCount = Server::GetInstance().GetFabricTable().FabricCount();
+
+    LOG_INF("[Aliro] Fabric removed=%u, remaining=%u",
+            static_cast<unsigned>(fabricIndex),
+            static_cast<unsigned>(fabricCount));
+
+    if (fabricCount == 0)
+    {
+        LogErrorOnFailure(
+            PlatformMgr().ScheduleWork(ClearAliroStateAfterLastFabric, 0));
+    }
+}
+
 constexpr atomic_val_t kNoPendingAliroAction = -1;
 atomic_t sPendingAliroState                 = kNoPendingAliroAction;
 
 void ApplyAliroLockState(intptr_t argument)
 {
+    if (Server::GetInstance().GetFabricTable().FabricCount() == 0)
+    {
+        LOG_WRN("[Aliro] Dropping pending action: no Matter fabrics");
+        atomic_set(&sPendingAliroState, kNoPendingAliroAction);
+        return;
+    }
+
     const auto state = static_cast<telink_aliro_lock_state>(argument);
     LockManager::Action_t action;
 
@@ -219,6 +311,7 @@ int StopAliroAdvertising()
     return 0;
 
 #else
+    LOG_INF("Aliro adv request cancellation");
     BLEAdvertisingArbiter::CancelRequest(sAliroAdvertisingRequest);
 
     return 0;
@@ -276,6 +369,8 @@ CHIP_ERROR AppTask::Init(void)
     ReturnErrorOnFailure(LockMgr().RestoreUsers());
     ReturnErrorOnFailure(AliroDelegate::GetInstance().RestoreAliroState());
     ReturnErrorOnFailure(AliroDelegate::GetInstance().StartAliroTransports());
+
+    DoorLockServer::Instance().SetOnFabricRemovedCustomCallback(OnAliroFabricRemoved);
 
     return CHIP_NO_ERROR;
 }
