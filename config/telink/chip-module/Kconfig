@@ -340,3 +340,11 @@ config SECURE_PROGRAMMING
 	bool "Enable reading DAC and keys from the DAC partition"
 	depends on CHIP_FACTORY_DATA
 	default n
+
+config CHIP_XIP_JUMP_ACTION
+	bool "Enable XIP firmware jump between Matter and Zigbee"
+	default n
+	help
+	  Enable single-core dual-protocol runtime switching.
+	  Allows erasing Matter credentials and performing XIP image jump
+	  between Matter and Zigbee firmware on Telink platform.
