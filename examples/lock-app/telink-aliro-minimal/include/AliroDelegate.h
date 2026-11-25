@@ -49,6 +49,10 @@ public:
     CHIP_ERROR RestoreAliroState();
     CHIP_ERROR StartAliroTransports();
 
+#ifdef CONFIG_ALIRO_BLE_BUTTON_TOGGLE
+    CHIP_ERROR ToggleAliroBle();
+#endif
+
     // Aliro credential storage - called from LockManager
     static bool IsAliroCredentialType(CredentialTypeEnum type);
     bool GetCredential(uint16_t index, CredentialTypeEnum type, EmberAfPluginDoorLockCredentialInfo & out);

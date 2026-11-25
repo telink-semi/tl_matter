@@ -308,7 +308,11 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
 #endif
 
 #if CONFIG_ALIRO_TRANSPORT_BLE
+#ifdef CONFIG_ALIRO_BLE_BUTTON_TOGGLE
+    if (telink_aliro_ble_is_enabled() && !mAliroBleStarted)
+#else
     if (!mAliroBleStarted)
+#endif
     {
         err = telink_aliro_ble_start();
         if (err != 0)
@@ -327,6 +331,25 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
 
     return transportStarted ? CHIP_NO_ERROR : startErr;
 }
+
+#ifdef CONFIG_ALIRO_BLE_BUTTON_TOGGLE
+CHIP_ERROR AliroDelegate::ToggleAliroBle()
+{
+    const bool enabled = !telink_aliro_ble_is_enabled();
+    const int err = telink_aliro_ble_set_enabled(enabled);
+
+    if (err != 0)
+    {
+        ChipLogError(Zcl, "Failed to %s Aliro BLE: %d", enabled ? "enable" : "disable", err);
+        return CHIP_ERROR_INTERNAL;
+    }
+
+    mAliroBleStarted = false;
+    ChipLogProgress(Zcl, "Aliro BLE %s", enabled ? "enabled" : "disabled");
+
+    return enabled ? StartAliroTransports() : CHIP_NO_ERROR;
+}
+#endif
 
 CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, const ByteSpan & verificationKey,
                                                const ByteSpan & groupIdentifier, const Optional<ByteSpan> & groupResolvingKey)
