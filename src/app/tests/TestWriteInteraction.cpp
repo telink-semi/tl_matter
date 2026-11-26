@@ -419,7 +419,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteClient)
     for (EncodingMethod encoding : { EncodingMethod::Standard, EncodingMethod::PreencodedTLV })
     {
         TestWriteClientCallback callback;
-        app::WriteClient writeClient(&GetExchangeManager(), &callback, /* aTimedWriteTimeoutMs = */ NullOptional);
+        app::WriteClient writeClient(&GetExchangeManager(), &callback, std::nullopt, /* aTimedWriteTimeoutMs = */ NullOptional);
 
         System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
         AddAttributeDataIB(writeClient, encoding);
@@ -444,7 +444,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteClientGroup)
     for (EncodingMethod encodingMethod : { EncodingMethod::Standard, EncodingMethod::PreencodedTLV })
     {
         TestWriteClientCallback callback;
-        app::WriteClient writeClient(&GetExchangeManager(), &callback, /* aTimedWriteTimeoutMs = */ NullOptional);
+        app::WriteClient writeClient(&GetExchangeManager(), &callback, std::nullopt, /* aTimedWriteTimeoutMs = */ NullOptional);
 
         System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
         AddAttributeDataIB(writeClient, encodingMethod);
@@ -515,7 +515,7 @@ TEST_F(TestWriteInteraction, TestWriteRoundtripWithClusterObjects)
         EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()),
                   CHIP_NO_ERROR);
 
-        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
         System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
 
@@ -606,7 +606,7 @@ TEST_F(TestWriteInteraction, TestWriteRoundtripWithClusterObjectsVersionMatch)
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
 
@@ -651,7 +651,7 @@ TEST_F(TestWriteInteraction, TestWriteRoundtripWithClusterObjectsVersionMismatch
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
 
@@ -702,7 +702,7 @@ TEST_F(TestWriteInteraction, TestWriteRoundtrip)
         EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()),
                   CHIP_NO_ERROR);
 
-        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
         System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
         AddAttributeDataIB(writeClient, encodingMethod);
@@ -739,7 +739,7 @@ TEST_F(TestWriteInteraction, TestWriteClientSuppressResponseFlow)
         EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()),
                   CHIP_NO_ERROR);
 
-        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing(),
+        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing(),
                                      /* aSuppressResponse = */ true);
 
         AddAttributeDataIB(writeClient, encodingMethod);
@@ -776,7 +776,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteClientSuppressResponseFlowWit
         EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()),
                   CHIP_NO_ERROR);
 
-        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing(),
+        app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing(),
                                      /* aSuppressResponse */ true);
 
         AddInvalidAttributeDataIB(writeClient, encodingMethod);
@@ -827,7 +827,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteHandlerReceiveInvalidMessage)
 
     // Reserve all except the last 60 bytes, so that we make sure to chunk. it was empirically determined that with a list of 10
     // ByteSpan items, we will be able to fit 5/6 list items into the initial ReplaceAll list; thus triggering chunking.
-    app::WriteClient writeClient(&GetExchangeManager(), &writeCallback, Optional<uint16_t>::Missing(),
+    app::WriteClient writeClient(&GetExchangeManager(), &writeCallback, std::nullopt, Optional<uint16_t>::Missing(),
                                  static_cast<uint16_t>(kMaxSecureSduLengthBytes - 60) /* reserved buffer size */);
 
     constexpr uint8_t kTestListLength = 10;
@@ -897,7 +897,7 @@ TEST_F(TestWriteInteraction, TestWriteHandlerInvalidateFabric)
 
     // Reserve all except the last 60 bytes, so that we make sure to chunk. it was empirically determined that with a list of 10
     // ByteSpan items, we will be able to fit 5/6 list items into the initial ReplaceAll list; thus triggering chunking.
-    app::WriteClient writeClient(&GetExchangeManager(), &writeCallback, Optional<uint16_t>::Missing(),
+    app::WriteClient writeClient(&GetExchangeManager(), &writeCallback, std::nullopt, Optional<uint16_t>::Missing(),
                                  static_cast<uint16_t>(kMaxSecureSduLengthBytes - 60) /* reserved buffer size */);
 
     constexpr uint8_t kTestListLength = 10;
@@ -988,7 +988,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteInvalidMessage1)
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
     AddAttributeDataIB(writeClient);
@@ -1059,7 +1059,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteInvalidMessage2)
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
     AddAttributeDataIB(writeClient);
@@ -1129,7 +1129,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteInvalidMessage3)
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
     AddAttributeDataIB(writeClient);
@@ -1200,7 +1200,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteInvalidMessage4)
     auto * engine = chip::app::InteractionModelEngine::GetInstance();
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing());
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing());
 
     System::PacketBufferHandle buf = System::PacketBufferHandle::New(System::PacketBuffer::kMaxSize);
     AddAttributeDataIB(writeClient);
@@ -1272,7 +1272,7 @@ TEST_F_FROM_FIXTURE(TestWriteInteraction, TestWriteInvalidMessage5)
     EXPECT_EQ(engine->Init(&GetExchangeManager(), &GetFabricTable(), app::reporting::GetDefaultReportScheduler()), CHIP_NO_ERROR);
 
     // Reserve buffer to trigger chunking
-    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, Optional<uint16_t>::Missing(),
+    app::WriteClient writeClient(engine->GetExchangeManager(), &callback, std::nullopt, Optional<uint16_t>::Missing(),
                                  static_cast<uint16_t>(kMaxSecureSduLengthBytes - 60) /* reserved buffer size */);
 
     app::AttributePathParams attributePath(2, 3, 4);
