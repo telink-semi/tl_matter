@@ -1,14 +1,14 @@
 # Telink Matter SDK Release Note
 
-[![Version](https://img.shields.io/badge/Version-tl__v1.5.1--alpha--v1.5-blue?style=flat-square)](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-alpha-v1.5)
+[![Version](https://img.shields.io/badge/Version-tl__v1.5.1--beta--v1.5-blue?style=flat-square)](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-beta-v1.5)
 [![License](https://img.shields.io/badge/License-Apache%202.0-red?style=flat-square)](../../../../LICENSE)
 [![Matter](https://img.shields.io/badge/Matter-v1.5-green?style=flat-square)](https://github.com/project-chip/connectedhomeip/commit/f4a8cf98ada4ad4f439b45e360800693cc5f1391)
 
 ---
 
--   **Release Type:** Alpha Release
+-   **Release Type:** Beta Release
 -   **Tag Version:**
-    [tl_v1.5.1-alpha-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-alpha-v1.5)
+    [tl_v1.5.1-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-beta-v1.5)
 
 ---
 
@@ -20,8 +20,8 @@ Matter changes from `dev-tlk_v1.5` onto `release-v1.5-v1.5-branch`:
 -   Enables the **BLE + Thread concurrent power management** on **TL323X** and
     optimizes the static RAM usage of the concurrent build (unified 160 KB RAM
     layout, smaller OpenThread/IPv6/heap footprints).
--   Moves the underlying Telink Zephyr SDK to the **tl_v1.5.1-alpha-v4.1.0**
-    line (release branch commit `de75d4c1ec8`) and the Telink BLE SDK to
+-   Moves the underlying Telink Zephyr SDK to the **tl_v1.5.1-beta-v4.1.0** line
+    (release branch commit `5d72a63a9c13`) and the Telink BLE SDK to
     `release/V4.0.4.8`.
 -   Fixes the system-workqueue and OpenThread stack overflows observed during
     boot and Amazon ecosystem commissioning.
@@ -51,10 +51,10 @@ The following changes land on top of tl_v1.5.0:
     and re-enable the ADC in the concurrent configuration
     ([#102](https://github.com/telink-semi/tl_matter/pull/102)).
 -   **Dependencies:** Update the Telink Zephyr SDK to
-    [`de75d4c1`](https://github.com/telink-semi/tl_zephyr/commit/de75d4c1ec8fcfbb968768d3d0a6a776e0f17fec)
-    (`tl_v1.5.1-alpha-v4.1.0`), the Telink BLE SDK to
+    [`5d72a63a`](https://github.com/telink-semi/tl_zephyr/commit/5d72a63a9c13a09c06b4f7776a6563308b3149fa)
+    (`tl_v1.5.1-beta-v4.1.0`), the Telink BLE SDK to
     [`a508cc0`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/a508cc070bee70d5596624377e0b078b29c29fc2)
-    (`release/V4.0.4.8`), and `hal_telink` to `3cc9054`.
+    (`release/V4.0.4.8`), and `hal_telink` to `78c97208`.
 -   **CI:** Point the Telink examples and Chef workflows at the Zephyr
     `release-v1.5-v4.1-branch` revision, and extend the Mergify backport rules
     ([#100](https://github.com/telink-semi/tl_matter/pull/100)).
@@ -126,21 +126,21 @@ The following changes land on top of tl_v1.5.0:
 
 ## 📦 Updates / Dependencies
 
-| Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                                        |
-| ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`de75d4c1`](https://github.com/telink-semi/tl_zephyr/commit/de75d4c1ec8fcfbb968768d3d0a6a776e0f17fec)         | `tl_v1.5.1-alpha-v4.1.0`, Zephyr v4.1.0 line                 |
-| **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`a508cc0`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/a508cc070bee70d5596624377e0b078b29c29fc2)  | `tl_v1.5.1-alpha-v4.0.4.8`, paired with the Zephyr SDK above |
-| **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`3cc9054`](https://github.com/telink-semi/hal_telink/commit/3cc9054edd5edcaa1a8b5870099af81433afaf58)         | Updated from `81ded24`; contains hal_v1 and hal_v2 sources   |
-| **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Unchanged since tl_v1.4.1; needed for OTA                    |
-| **OpenThread Telink**     | [telink-semi/tl_openthread](https://github.com/telink-semi/tl_openthread)           | [`542aaab`](https://github.com/telink-semi/tl_openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee)      | Unchanged since tl_v1.4.1                                    |
-| **OpenThread Telink Lib** | [telink-semi/tl_openthread_libs](https://github.com/telink-semi/tl_openthread_libs) | [`f69c186`](https://github.com/telink-semi/tl_openthread_libs/commit/f69c186d65a41259480e87ccf9d2a7f665249778) | Unchanged since tl_v1.4.1                                    |
-| **Telink XZ (LZMA)**      | [telink-semi/tl_xz](https://github.com/telink-semi/tl_xz)                           | [`831f338`](https://github.com/telink-semi/tl_xz/commit/831f338fd6784661d3bec62fd01060ee4d7d373d)              | Unchanged since tl_v1.4.1                                    |
+| Component                 | Repository                                                                          | Commit                                                                                                         | Notes                                                       |
+| ------------------------- | ----------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| **Telink Zephyr SDK**     | [telink-semi/tl_zephyr](https://github.com/telink-semi/tl_zephyr)                   | [`5d72a63a`](https://github.com/telink-semi/tl_zephyr/commit/5d72a63a9c13a09c06b4f7776a6563308b3149fa)         | `tl_v1.5.1-beta-v4.1.0`, Zephyr v4.1.0 line                 |
+| **Telink BLE SDK**        | [telink-semi/tl_ble_sdk_zephyr](https://github.com/telink-semi/tl_ble_sdk_zephyr)   | [`a508cc0`](https://github.com/telink-semi/tl_ble_sdk_zephyr/commit/a508cc070bee70d5596624377e0b078b29c29fc2)  | `tl_v1.5.1-beta-v4.0.4.8`, paired with the Zephyr SDK above |
+| **Telink HAL Zephyr**     | [telink-semi/hal_telink](https://github.com/telink-semi/hal_telink)                 | [`78c97208`](https://github.com/telink-semi/hal_telink/commit/78c97208022e655c8fc547aed7e19ce6f314b88c)        | Updated from `81ded24`; contains hal_v1 and hal_v2 sources  |
+| **MCUBoot**               | [telink-semi/tl_mcuboot](https://github.com/telink-semi/tl_mcuboot)                 | [`ce0da85`](https://github.com/telink-semi/tl_mcuboot/commit/ce0da85c39c749df49b0ec62b33d2ecdea24c927)         | Unchanged since tl_v1.4.1; needed for OTA                   |
+| **OpenThread Telink**     | [telink-semi/tl_openthread](https://github.com/telink-semi/tl_openthread)           | [`542aaab`](https://github.com/telink-semi/tl_openthread/commit/542aaab44e1308e1a8a24573dfbd413fade342ee)      | Unchanged since tl_v1.4.1                                   |
+| **OpenThread Telink Lib** | [telink-semi/tl_openthread_libs](https://github.com/telink-semi/tl_openthread_libs) | [`f69c186`](https://github.com/telink-semi/tl_openthread_libs/commit/f69c186d65a41259480e87ccf9d2a7f665249778) | Unchanged since tl_v1.4.1                                   |
+| **Telink XZ (LZMA)**      | [telink-semi/tl_xz](https://github.com/telink-semi/tl_xz)                           | [`831f338`](https://github.com/telink-semi/tl_xz/commit/831f338fd6784661d3bec62fd01060ee4d7d373d)              | Unchanged since tl_v1.4.1                                   |
 
 ### Dependency Changes Since tl_v1.5.0
 
--   `telink_zephyr`: `3b7996ad` → `de75d4c1ec8` (`tl_v1.5.1-alpha-v4.1.0`)
+-   `telink_zephyr`: `3b7996ad` → `5d72a63a9c13` (`tl_v1.5.1-beta-v4.1.0`)
 -   `telink_ble_sdk`: `eb0d1206` → `a508cc070` (`release/V4.0.4.8`)
--   `hal_telink`: `81ded240` → `3cc9054e`
+-   `hal_telink`: `81ded240` → `78c97208`
 -   `tl_mcuboot`, `tl_openthread`, `tl_openthread_libs`, and `tl_xz` remain
     unchanged from tl_v1.5.0.
 
@@ -181,16 +181,16 @@ support.
 
 ### Telink Matter SDK
 
-| Property         | Version                                                                                            |
-| ---------------- | -------------------------------------------------------------------------------------------------- |
-| **Tag Name**     | [tl_v1.5.1-alpha-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-alpha-v1.5) |
-| **Release Type** | Alpha Release                                                                                      |
+| Property         | Version                                                                                          |
+| ---------------- | ------------------------------------------------------------------------------------------------ |
+| **Tag Name**     | [tl_v1.5.1-beta-v1.5](https://github.com/telink-semi/tl_matter/releases/tag/tl_v1.5.1-beta-v1.5) |
+| **Release Type** | Beta Release                                                                                     |
 
 ### Telink Zephyr SDK
 
 | Property   | Version                                                                                              |
 | ---------- | ---------------------------------------------------------------------------------------------------- |
-| **Commit** | [de75d4c1](https://github.com/telink-semi/tl_zephyr/commit/de75d4c1ec8fcfbb968768d3d0a6a776e0f17fec) |
+| **Commit** | [5d72a63a](https://github.com/telink-semi/tl_zephyr/commit/5d72a63a9c13a09c06b4f7776a6563308b3149fa) |
 
 ### Chip &amp; Hardware Versions
 
@@ -251,8 +251,8 @@ Telink TL323X platform, built with the Matter SDK and Zephyr RTOS.
 
 | App              | Build Target                                  | RAM_ILM_N                 | ROM                          | RAM                         |
 | ---------------- | --------------------------------------------- | ------------------------- | ---------------------------- | --------------------------- |
-| **light-switch** | `build_tl3238x_retention_ota_lzma_v1`         | 63794 B (97.34% of 64 KB) | 907182 B (76.90% of 1152 KB) | 85356 B (52.10% of 160 KB)  |
-| **light-switch** | `build_tl3238x_retention_concurrent_ota_lzma` | 0 B (0.00% of 64 KB)      | 915558 B (77.61% of 1152 KB) | 153468 B (93.67% of 160 KB) |
+| **light-switch** | `build_tl3238x_retention_ota_lzma_v1`         | 63794 B (97.34% of 64 KB) | 907314 B (76.91% of 1152 KB) | 85356 B (52.10% of 160 KB)  |
+| **light-switch** | `build_tl3238x_retention_concurrent_ota_lzma` | 0 B (0.00% of 64 KB)      | 915698 B (77.62% of 1152 KB) | 153468 B (93.67% of 160 KB) |
 
 > 📌 **Note:** Memory usage data is extracted from the linker output (Memory
 > region summary) of the build logs. For TL323X, `RAM_ILM_N` is 64 KB, the
