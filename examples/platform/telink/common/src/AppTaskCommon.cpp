@@ -155,6 +155,7 @@ DeferredAttributePersistenceProvider gDeferredAttributePersister(gSimpleAttribut
 #define MATTER_NVS_PARTITION_SIZE FIXED_PARTITION_SIZE(MATTER_NVS_PARTITION)
 const struct device * matter_nvs_dev    = MATTER_NVS_PARTITION_DEVICE;
 
+#if CONFIG_CHIP_XIP_JUMP_ACTION
 static void JumpWorkHandler(uintptr_t target_addr)
 {
     void *boot_app = (void *)target_addr;
@@ -195,6 +196,7 @@ static void SwitchToZigbeeImage(void)
     }
     JumpWorkHandler(app_start_addr);
 }
+#endif /* CONFIG_CHIP_XIP_JUMP_ACTION */
 
 #if CONFIG_DUAL_MODE == CONFIG_ACTION_DUAL_MODE || CONFIG_DUAL_MODE == CONFIG_AUTO_SWITCH_DUAL_MODE
 
