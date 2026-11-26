@@ -339,8 +339,6 @@ CHIP_ERROR AppTask::Init(void)
     SetExampleButtonCallbacks(LockActionEventHandler);
     ReturnErrorOnFailure(InitCommonParts());
 
-    LedManager::getInstance().setLed(LedManager::EAppLed_App0, LockMgr().IsLocked());
-
     chip::app::DataModel::Nullable<chip::app::Clusters::DoorLock::DlLockState> state;
     chip::EndpointId endpointId{ kExampleEndpointId };
     chip::DeviceLayer::PlatformMgr().LockChipStack();
@@ -355,6 +353,8 @@ CHIP_ERROR AppTask::Init(void)
         LOG_ERR("LockMgr().Init() failed");
         return err;
     }
+
+    LedManager::getInstance().setLed(LedManager::EAppLed_App0, LockMgr().IsLocked());
 
     ReturnErrorOnFailure(DoorLockServer::Instance().SetDelegate(kExampleEndpointId, &AliroDelegate::GetInstance()));
 

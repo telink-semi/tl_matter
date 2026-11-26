@@ -24,10 +24,18 @@
 
 	led_pool {
 		out {
-			gpios = <&gpioc 0 GPIO_ACTIVE_HIGH>,
-				<&gpioc 1 GPIO_ACTIVE_HIGH>;
+			gpios = <&gpioc 3 GPIO_ACTIVE_HIGH>,
+				<&gpioc 0 GPIO_ACTIVE_HIGH>;
 		};
 	};
+
+	pwm_pool {
+		status = "disabled";
+	};
+};
+
+&pwm0 {
+	status = "disabled";
 };
 
 &gpioc {
