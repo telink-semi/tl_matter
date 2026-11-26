@@ -43,18 +43,6 @@ using namespace ::chip::DeviceLayer::Internal;
 AppTask AppTask::sAppTask;
 
 namespace {
-#ifdef CONFIG_ALIRO_BLE_BUTTON_TOGGLE
-void ToggleAliroBle(intptr_t)
-{
-    LogErrorOnFailure(AliroDelegate::GetInstance().ToggleAliroBle());
-}
-
-void AliroBleButtonEventHandler()
-{
-    LogErrorOnFailure(PlatformMgr().ScheduleWork(ToggleAliroBle, 0));
-}
-#endif
-
 void ClearAliroStateAfterLastFabric(intptr_t)
 {
     if (Server::GetInstance().GetFabricTable().FabricCount() != 0)
@@ -530,9 +518,6 @@ void AppTask::LinkButtons(ButtonManager & buttonManager)
 {
     buttonManager.addCallback(FactoryResetButtonEventHandler, 0, true);
     buttonManager.addCallback(ExampleActionButtonEventHandler, 1, true);
-#ifdef CONFIG_ALIRO_BLE_BUTTON_TOGGLE
-    buttonManager.addCallback(AliroBleButtonEventHandler, 2, true);
-#endif
 }
 
 void AppTask::LinkLeds(LedManager & ledManager)
