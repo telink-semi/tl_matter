@@ -50,10 +50,20 @@ def fetch_telink_ble_sdk(repo_url, commit_hash):
     if not os.path.exists("fetch_sdk.sh"):
         raise RuntimeError(f"fetch_sdk.sh not found in {sdk_script_dir}")
 
-    # Execute fetch_sdk.sh
-    print(f"Fetching Telink BLE SDK with commit {commit_hash}...")
-    # subprocess.run(["chmod", "+x", "fetch_sdk.sh"], check=True)
-    subprocess.run(["./fetch_sdk.sh", repo_url, commit_hash], check=True)
+    # A PR head lives under refs/pull/*/head and is not handled by
+    # the fetch_sdk.sh branch/tag/commit lookup. Update the default revision
+    # first, then fetch and check out the PR ref explicitly.
+    if commit_hash.startswith("pull/") or commit_hash.startswith("refs/pull/"):
+        ref = commit_hash if commit_hash.startswith("refs/") else f"refs/{commit_hash}"
+        sdk_dir = os.path.abspath(os.path.join(sdk_script_dir, "../../telink_ble_sdk"))
+        print("Fetching Telink BLE SDK default revision first...")
+        subprocess.run(["./fetch_sdk.sh", repo_url], check=True)
+        print(f"Fetching {ref} from {repo_url}...")
+        subprocess.run(["git", "-C", sdk_dir, "fetch", "origin", ref], check=True)
+        subprocess.run(["git", "-C", sdk_dir, "checkout", "--detach", "FETCH_HEAD"], check=True)
+    else:
+        print(f"Fetching Telink BLE SDK with commit {commit_hash}...")
+        subprocess.run(["./fetch_sdk.sh", repo_url, commit_hash], check=True)
 
     print("Telink BLE SDK fetch completed.")
 
