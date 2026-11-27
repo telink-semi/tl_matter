@@ -35,7 +35,6 @@ struct ReaderConfig
     uint8_t signingKey[kSigningKeySize];
     uint8_t verificationKey[65];
     uint8_t groupIdentifier[16];
-    uint8_t groupSubIdentifier[16];
     uint8_t groupResolvingKey[16];
     uint8_t hasGroupResolvingKey;
 };

@@ -51,10 +51,13 @@ config ALIRO_TRANSPORT_BLE
     select BT_L2CAP_DYNAMIC_CHANNEL
     # BLE enables PSA crypto; Matter's CSR signing needs deterministic ECDSA.
     select PSA_WANT_ALG_DETERMINISTIC_ECDSA
+
 config ALIRO_ONLY_BLE_FLOW_SUPP
+    depends on ALIRO_TRANSPORT_BLE
     default y
 
 config ALIRO_BLE_UWB_FLOW_SUPP
+    depends on ALIRO_TRANSPORT_BLE
     default y
 
 config ALIRO_BLE_UWB_AUTO_LOCK

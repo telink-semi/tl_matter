@@ -23,7 +23,6 @@
 #include <cstdio>
 #include <cstring>
 #include <errno.h>
-#include <crypto/CHIPCryptoPAL.h>
 #include <lib/core/CHIPEncoding.h>
 #include <lib/support/Span.h>
 #include <lib/support/logging/CHIPLogging.h>
@@ -35,6 +34,15 @@ using namespace chip::app::Clusters::DoorLock;
 AliroDelegate AliroDelegate::sInstance;
 
 namespace {
+
+// Fixed Group Sub-Identifier for this test reader.
+// Must be unique for each physical reader.
+constexpr uint8_t kGroupSubIdentifier[kAliroReaderGroupSubIdentifierSize] = {
+    0x36, 0x50, 0xA7, 0xC2,
+    0x19, 0x8E, 0x4B, 0xD3,
+    0x92, 0xF1, 0x65, 0xB8,
+    0x0C, 0xE4, 0x73, 0x2A
+};
 
 void CredentialStorageKey(char * key, size_t size, CredentialTypeEnum type, uint16_t index)
 {
@@ -93,7 +101,7 @@ CHIP_ERROR AliroDelegate::GetAliroReaderGroupSubIdentifier(MutableByteSpan & gro
         return CHIP_NO_ERROR;
     }
 
-    return CopySpanToMutableSpan(ByteSpan(mAliroReaderGroupSubIdentifier), groupSubIdentifier);
+    return CopySpanToMutableSpan(ByteSpan(kGroupSubIdentifier), groupSubIdentifier);
 }
 
 CHIP_ERROR AliroDelegate::CopyProtocolVersionIntoSpan(uint16_t protocolVersionValue, MutableByteSpan & protocolVersion)
@@ -129,7 +137,8 @@ CHIP_ERROR AliroDelegate::GetAliroExpeditedTransactionSupportedProtocolVersionAt
 
 CHIP_ERROR AliroDelegate::GetAliroGroupResolvingKey(MutableByteSpan & groupResolvingKey)
 {
-    ChipLogProgress(Zcl, "[Aliro] Read GroupResolvingKey (configured=%u)", mAliroStateInitialized);
+    ChipLogProgress(Zcl, "[Aliro] Read GroupResolvingKey (reader_configured=%u, key_present=%u)",
+                    mAliroStateInitialized, mAliroHasGroupResolvingKey);
 
     if (!mAliroStateInitialized || !mAliroHasGroupResolvingKey)
     {
@@ -204,7 +213,7 @@ CHIP_ERROR AliroDelegate::RestoreAliroState()
         ret = telink_aliro_set_reader_config(config.signingKey, sizeof(config.signingKey),
             config.verificationKey, sizeof(config.verificationKey),
             config.groupIdentifier, sizeof(config.groupIdentifier),
-            config.groupSubIdentifier, sizeof(config.groupSubIdentifier));
+            kGroupSubIdentifier, sizeof(kGroupSubIdentifier));
 
         VerifyOrReturnError(ret == 0, CHIP_ERROR_INTERNAL,
             ChipLogError(Zcl, "Failed to restore Aliro reader configuration: %d", ret));
@@ -257,7 +266,6 @@ CHIP_ERROR AliroDelegate::RestoreAliroState()
     {
         memcpy(mAliroReaderVerificationKey, config.verificationKey, sizeof(mAliroReaderVerificationKey));
         memcpy(mAliroReaderGroupIdentifier, config.groupIdentifier, sizeof(mAliroReaderGroupIdentifier));
-        memcpy(mAliroReaderGroupSubIdentifier, config.groupSubIdentifier, sizeof(mAliroReaderGroupSubIdentifier));
         memcpy(mAliroGroupResolvingKey, config.groupResolvingKey, sizeof(mAliroGroupResolvingKey));
         mAliroHasGroupResolvingKey = config.hasGroupResolvingKey != 0;
         mAliroStateInitialized = true;
@@ -274,6 +282,9 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         return CHIP_NO_ERROR;
     }
 
+    CHIP_ERROR startErr = CHIP_NO_ERROR;
+    bool transportStarted = false;
+
 #if CONFIG_ALIRO_TRANSPORT_NFC || CONFIG_ALIRO_TRANSPORT_BLE
     int err;
 #endif
@@ -285,10 +296,15 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         if (err != 0 && err != -EALREADY)
         {
             ChipLogError(Zcl, "Failed to start Aliro NFC: %d", err);
-            return CHIP_ERROR_INTERNAL;
+            startErr = CHIP_ERROR_INTERNAL;
         }
-        mAliroNfcStarted = true;
+        else
+        {
+            mAliroNfcStarted = true;
+        }
     }
+
+    transportStarted |= mAliroNfcStarted;
 #endif
 
 #if CONFIG_ALIRO_TRANSPORT_BLE
@@ -298,13 +314,18 @@ CHIP_ERROR AliroDelegate::StartAliroTransports()
         if (err != 0)
         {
             ChipLogError(Zcl, "Failed to start Aliro BLE: %d", err);
-            return CHIP_ERROR_INTERNAL;
+            startErr = CHIP_ERROR_INTERNAL;
         }
-        mAliroBleStarted = true;
+        else
+        {
+            mAliroBleStarted = true;
+        }
     }
+
+    transportStarted |= mAliroBleStarted;
 #endif
 
-    return CHIP_NO_ERROR;
+    return transportStarted ? CHIP_NO_ERROR : startErr;
 }
 
 CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, const ByteSpan & verificationKey,
@@ -321,7 +342,6 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
 
     static_assert(sizeof(AliroStorage::ReaderConfig{}.verificationKey) == sizeof(mAliroReaderVerificationKey));
     static_assert(sizeof(AliroStorage::ReaderConfig{}.groupIdentifier) == sizeof(mAliroReaderGroupIdentifier));
-    static_assert(sizeof(AliroStorage::ReaderConfig{}.groupSubIdentifier) == sizeof(mAliroReaderGroupSubIdentifier));
     static_assert(sizeof(AliroStorage::ReaderConfig{}.groupResolvingKey) == sizeof(mAliroGroupResolvingKey));
     static_assert(sizeof(AliroStorage::Credential{}.data) == kAliroCredentialMaxSize);
 
@@ -339,6 +359,7 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
              memcmp(current.groupResolvingKey, groupResolvingKey.Value().data(), groupResolvingKey.Value().size()) == 0);
 
         // Reconfiguration of an active reader requires a preceding ClearAliroReaderConfig
+        ChipLogProgress(Zcl, "[Aliro] SetAliroReaderConfig duplicate, unchanged=%u", unchanged);
         VerifyOrReturnError(unchanged, CHIP_ERROR_INCORRECT_STATE);
 
         CHIP_ERROR startErr = StartAliroTransports();
@@ -360,8 +381,6 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
         memcpy(config.groupResolvingKey, groupResolvingKey.Value().data(), groupResolvingKey.Value().size());
     }
 
-    ReturnErrorOnFailure(Crypto::DRBG_get_bytes(config.groupSubIdentifier, sizeof(config.groupSubIdentifier)));
-
     int err;
 #if CONFIG_ALIRO_TRANSPORT_BLE
     err = telink_aliro_ble_set_group_resolving_key(config.hasGroupResolvingKey ? config.groupResolvingKey : nullptr,
@@ -373,7 +392,7 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
     err = telink_aliro_set_reader_config(config.signingKey, sizeof(config.signingKey),
         config.verificationKey, sizeof(config.verificationKey),
         config.groupIdentifier, sizeof(config.groupIdentifier),
-        config.groupSubIdentifier, sizeof(config.groupSubIdentifier));
+        kGroupSubIdentifier, sizeof(kGroupSubIdentifier));
     if (err != 0)
     {
 #if CONFIG_ALIRO_TRANSPORT_BLE
@@ -395,7 +414,6 @@ CHIP_ERROR AliroDelegate::SetAliroReaderConfig(const ByteSpan & signingKey, cons
 
     memcpy(mAliroReaderVerificationKey, config.verificationKey, sizeof(mAliroReaderVerificationKey));
     memcpy(mAliroReaderGroupIdentifier, config.groupIdentifier, sizeof(mAliroReaderGroupIdentifier));
-    memcpy(mAliroReaderGroupSubIdentifier, config.groupSubIdentifier, sizeof(mAliroReaderGroupSubIdentifier));
     memcpy(mAliroGroupResolvingKey, config.groupResolvingKey, sizeof(mAliroGroupResolvingKey));
     mAliroHasGroupResolvingKey = (config.hasGroupResolvingKey != 0);
     mAliroStateInitialized = true;
@@ -435,11 +453,13 @@ CHIP_ERROR AliroDelegate::ClearAliroReaderConfig()
 
     memset(mAliroReaderVerificationKey, 0, sizeof(mAliroReaderVerificationKey));
     memset(mAliroReaderGroupIdentifier, 0, sizeof(mAliroReaderGroupIdentifier));
-    memset(mAliroReaderGroupSubIdentifier, 0, sizeof(mAliroReaderGroupSubIdentifier));
     memset(mAliroGroupResolvingKey, 0, sizeof(mAliroGroupResolvingKey));
     mAliroStateInitialized = false;
     mAliroHasGroupResolvingKey = false;
     mAliroNfcStarted = false;
+
+    ChipLogProgress(Zcl, "[Aliro] Reader configuration cleared");
+
     return CHIP_NO_ERROR;
 }
 
