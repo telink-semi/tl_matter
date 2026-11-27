@@ -209,7 +209,7 @@ bool ParseFactoryData(uint8_t * buffer, uint16_t bufferSize, struct FactoryData 
 }
 
 #ifdef CONFIG_SECURE_PROGRAMMING
-#if CONFIG_SOC_RISCV_TELINK_TL323X || CONFIG_SOC_RISCV_TELINK_TL521X
+#if defined(CONFIG_SOC_RISCV_TELINK_TL323X) || defined(CONFIG_SOC_RISCV_TELINK_TL521X)
 #include "efuse.h"
 #include "ske_basic.h"
 #include "ske_portable.h"
@@ -245,13 +245,17 @@ bool LoadDACCertAndKey(uint8_t * base_buffer, struct FactoryData * factoryData)
     {
         memcpy(chip_id, ieee_addr, 8);
 
-#if CONFIG_SOC_RISCV_TELINK_TL323X || CONFIG_SOC_RISCV_TELINK_TL521X
+#if defined(CONFIG_SOC_RISCV_TELINK_TL323X) || defined(CONFIG_SOC_RISCV_TELINK_TL521X)
         ske_dig_en();
         aes_decryption_be(chip_id, buffer + 2, dac_key_decrypt);
         aes_decryption_be(chip_id, buffer + 18, dac_key_decrypt + 16);
 #else
         aes_decrypt(chip_id, buffer + 2, dac_key_decrypt);
         aes_decrypt(chip_id, buffer + 18, dac_key_decrypt + 16);
+#endif
+
+#ifdef CONFIG_SECURE_PROGRAMMING_TEST_LOG
+        LOG_HEXDUMP_ERR(dac_key_decrypt, sizeof(dac_key_decrypt), "SPTEST DAC PRIV KEY");
 #endif
 
         // LOG_INF("[LoadDACCertAndKey]DAC priv key decrypted, len=%u", dac_priv_key_len);
