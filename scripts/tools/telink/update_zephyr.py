@@ -59,7 +59,7 @@ def fetch_telink_ble_sdk(repo_url, commit_hash):
         print("Fetching Telink BLE SDK default revision first...")
         subprocess.run(["./fetch_sdk.sh", repo_url], check=True)
         print(f"Fetching {ref} from {repo_url}...")
-        subprocess.run(["git", "-C", sdk_dir, "fetch", "origin", ref], check=True)
+        subprocess.run(["git", "-C", sdk_dir, "fetch", repo_url, ref], check=True)
         subprocess.run(["git", "-C", sdk_dir, "checkout", "--detach", "FETCH_HEAD"], check=True)
     else:
         print(f"Fetching Telink BLE SDK with commit {commit_hash}...")
